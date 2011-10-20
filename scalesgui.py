@@ -4,7 +4,7 @@
 
 import sys, time, math
 from menu import *
-sys.path.insert(0, '/home/duncan/wiibalance/cwiid-0.6.00/python/build/lib.linux-x86_64-2.5')
+sys.path.insert(0, '/home/cwiid_lib')
 
 try:
 	import pygame
