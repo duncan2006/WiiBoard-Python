@@ -1,18 +1,40 @@
 #! /usr/bin/python
+'''Wii Balance Board Physiotherapy Main Menu'''
 
-import sys, pygame, random
+import sys, random
+
+sys.path.insert(0, '/home/cwiid_lib')
+
+try:
+	import pygame, pygame.font, pygame.event, pygame.draw, string
+except:
+	print "Sorry, I can't seem to import pygame for some reason."
+	print "Please check that the python-pygame package is installed, or get the latest version of pygame from http://www.pygame.org/"
+	sys.exit(1)
+	
+try:
+	import cwiid
+except:
+	print "Sorry, I can't seem to import cwiid for some reason."
+	print "Please check that it and it's python bindings are installed, and also the balance board patch from:"
+	print "http://abstrakraft.org/cwiid/ticket/63"
+	sys.exit(1)
+
 from menu import *
-from image import *
+from image import *python
+from pygame.locals import *
 import scalesgui
 import thread
 import PyMaze
+import weighttracker
 
-MAIN        = 0
-TRACKWEIGHT = 1
-SCALE       = 2
-CONNECTING  = 3
-MAZE        = 4
-EXIT        = 5
+MAIN            = 0
+TRACKWEIGHT     = 1
+SCALE           = 2
+CONNECTING      = 3
+MAZE            = 4
+EXIT            = 5
+CREATEPROFILE   = 6
 
 
 def main():
@@ -24,14 +46,23 @@ def main():
 
    # Create a window of 800x600 pixels
    screen = pygame.display.set_mode((800, 600))
-   
+   pygame.display.set_caption("Wii Balance Board Physiotherapy")
+
    screen.fill(BLACK)
    pygame.display.flip()
+
+   start_menu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
+	      [('Connect Wii Balance Board', CONNECTING, None),
+	       ('Create Profile',            CREATEPROFILE, None),
+	       ('Exit',                      EXIT, None)])
+
+   start_menu.set_center(True, True)
+   start_menu.set_alignment('center', 'center')
  
    menu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
-              [('Track Weight',           TRACKWEIGHT, None),
+              [('Create Profile',         CREATEPROFILE, None),
+	           ('Track Weight',           TRACKWEIGHT, None),
                ('Scale',                  SCALE, None),
-               ('Connect Wii Board',      CONNECTING, None),
                ('Maze',                   MAZE, None),
                ('Exit',                   EXIT, None)])
                
@@ -50,6 +81,11 @@ def main():
    # does not wait for user input)
    state = 0
    prev_state = 1
+   
+   #Profile stats
+   profile_name = ""
+   profile_feet = "__ft"
+   profile_inches = "__in"
    
    # rect_list is the list of pygame.Rect's that will tell pygame where to
    # update the screen (there is no point in updating the entire screen if only
@@ -75,18 +111,24 @@ def main():
          screen.fill(BLACK)
          desc_font = pygame.font.Font(None, 24)    # Font to use
          if wii_status!=False:
-            screen.blit(desc_font.render("Wiiboard is connected!", True, WHITE), (300, 570)) 
+            screen.blit(desc_font.render("Wiiboard is connected!", True, WHITE), (300, 570))
          else:
-            screen.blit(desc_font.render("Wiiboard is not connected", True, WHITE), (300, 570)) 
-         pygame.display.flip()
+            screen.blit(desc_font.render("Wiiboard is not connected", True, WHITE), (300, 570))
+
+	    screen.blit(desc_font.render("User: " + profile_name, True, WHITE), (0, 0))
+      screen.blit(desc_font.render("Height: " + profile_feet + " " + profile_inches, True, WHITE), (600, 0))
+   
+      pygame.display.flip()
 
       # Get the next event
       e = pygame.event.wait()
-
       
       if e.type == pygame.KEYDOWN or e.type == EVENT_CHANGE_STATE:
          if state == MAIN:
-            rect_list, state = menu.update(e, state)
+	    if wii_status:
+            	rect_list, state = menu.update(e, state)
+	    else:
+            	rect_list, state = start_menu.update(e, state)
          elif state == SCALE:
             #rect_list, state = menu.update(e, state)
             scalesgui.scalegui(screen)
@@ -98,6 +140,14 @@ def main():
             state=MAIN
          elif state == MAZE: 
             PyMaze.run()
+            state=MAIN
+         elif state == CREATEPROFILE:
+            screen.fill(BLACK)
+            profile_name = ask(screen, "Name")
+            screen.fill(BLACK)
+            profile_feet = ask(screen, "Height (feet)") + "ft"
+            screen.fill(BLACK)
+            profile_inches = ask(screen, "Height (inches)") + "in"
             state=MAIN
          else:
             pygame.quit()
@@ -111,11 +161,79 @@ def main():
       if e.type == pygame.KEYDOWN:
          if e.key == pygame.K_ESCAPE:
             pygame.quit()
-            sys.exit()           
-            
+            sys.exit()          
             
       # Update the screen
       pygame.display.update(rect_list)
+
+#Toggling fullscreen probably not a good idea
+def toggle_fullscreen():
+    screen = pygame.display.get_surface()
+    tmp = screen.convert()
+    caption = pygame.display.get_caption()
+    cursor = pygame.mouse.get_cursor()  # Duoas 16-04-2007 
+    
+    w,h = screen.get_width(),screen.get_height()
+    flags = screen.get_flags()
+    bits = screen.get_bitsize()
+    
+    pygame.display.quit()
+    pygame.display.init()
+    
+    screen = pygame.display.set_mode((w,h),flags^FULLSCREEN,bits)
+    screen.blit(tmp,(0,0))
+    pygame.display.set_caption(*caption)
+ 
+    pygame.key.set_mods(0) #HACK: work-a-round for a SDL bug??
+ 
+    pygame.mouse.set_cursor( *cursor )  # Duoas 16-04-2007
+    
+    return screen
+    
+def get_key():
+  while 1:
+    event = pygame.event.poll()
+    if event.type == KEYDOWN:
+      return event.key
+    else:
+      pass
+
+def display_box(screen, message):
+  "Print a message in a box in the middle of the screen"
+  fontobject = pygame.font.Font(None,18)
+  pygame.draw.rect(screen, (0,0,0),
+                   ((screen.get_width() / 2) - 100,
+                    (screen.get_height() / 2) - 10,
+                    200,20), 0)
+  pygame.draw.rect(screen, (255,255,255),
+                   ((screen.get_width() / 2) - 102,
+                    (screen.get_height() / 2) - 12,
+                    204,24), 1)
+  if len(message) != 0:
+    screen.blit(fontobject.render(message, 1, (255,255,255)),
+                ((screen.get_width() / 2) - 100, (screen.get_height() / 2) - 10))
+  pygame.display.flip()
+
+def ask(screen, question):
+  "ask(screen, question) -> answer"
+  pygame.font.init()
+  current_string = []
+  display_box(screen, question + ": " + string.join(current_string,""))
+  while 1:
+    inkey = get_key()
+    if inkey == K_BACKSPACE:
+      current_string = current_string[0:-1]
+    elif inkey == K_RETURN:
+      break
+    elif (inkey == K_RSHIFT or inkey == K_LSHIFT):
+      inkey = get_key()
+      inkey = inkey - 32
+      current_string.append(chr(inkey))  
+    elif inkey <= 127:
+      current_string.append(chr(inkey))
+    display_box(screen, question + ": " + string.join(current_string,""))
+  return string.join(current_string,"")
+
 
 if __name__ == "__main__":
    main()
