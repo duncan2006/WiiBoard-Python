@@ -1,1 +1,12 @@
-Jay testing...
+To begin, grab the newest version and merge it to your repository
+$ git fetch upstream
+$ git merge upstream/master
+
+Next, make changes to files in the repository
+
+Once done, add the everything to the commit list and commit
+$ git add .
+$ git commit -m "Comments for commit"
+
+Finally, push the updates to the server
+$ git push origin master
