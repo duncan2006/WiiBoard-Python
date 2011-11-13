@@ -5,6 +5,7 @@ from pygame.locals import *
 from maze import Maze
 import scalesgui
 import math
+import wiimenu
 class Game:
 
   def __init__(self, diff, dim, path):
@@ -205,18 +206,22 @@ class Game:
     self.screen.blit(self.blue_p, (self.cx*self.cell_width+2, \
         self.cy*self.cell_height+2))
         
-def run():
-  args = argv[1:]
-  diff = 0
-  dim = '30x40'
+def run(mazeSize, mazeDiff):
+  diff=0
+  dim = '15x20'
+  if mazeDiff == wiimenu.EASY:
+     diff = 0
+  elif mazeDiff == wiimenu.HARD:
+     diff = 1
+     
+  if mazeSize==wiimenu.SMALL:
+     dim = '10x13'
+  elif mazeSize==wiimenu.MEDIUM:
+     dim = '15x20'
+  elif mazeSize==wiimenu.LARGE:
+     dim = '30x40'
+    
   path = 1
-  for arg in args:
-    if '--diff' in arg:
-      diff = int(arg.split('=')[-1])
-    elif '--dim' in arg:
-      dim = arg.split('=')[-1]
-    elif '--path' in arg:
-      path = int(arg.split('=')[-1])
 
   g = Game(diff, dim, path)
   g.start() 

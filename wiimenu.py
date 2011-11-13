@@ -27,6 +27,7 @@ from pygame.locals import *
 import scalesgui
 import thread
 import PyMaze
+
 import os
 import csv
 #import weighttracker
@@ -41,6 +42,14 @@ CREATEPROFILE   	= 6
 LOADPROFILE			= 7
 BACK					= 8
 
+#Maze variables
+MAZESIZE        = 9
+MAZEDIFF        = 10
+SMALL           = 11
+MEDIUM          = 12
+LARGE           = 13
+EASY            = 14
+HARD            = 15
 
 def main():
    # Uncomment this to center the window on the computer screen
@@ -78,11 +87,13 @@ def main():
    start_menu.set_alignment('center', 'center')
  
    menu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
-        [('Create Profile',         CREATEPROFILE, None),
-			('Track Weight',           TRACKWEIGHT, None),
-         ('Scale',                  SCALE, None),
-         ('Maze',                   MAZE, None),
-         ('Exit',                   EXIT, None)])
+              [('Create Profile',         CREATEPROFILE, None),
+	           ('Track Weight',           TRACKWEIGHT, None),
+               ('Scale',                  SCALE, None),
+               ('Maze',                   MAZESIZE, None),
+               ('Exit',                   EXIT, None)])
+               
+
    menu.set_center(True, True)
    menu.set_alignment('center', 'center')
    
@@ -99,11 +110,28 @@ def main():
    
    #user_profile.write('Username,Height(in),Weight(lbs),BMI')
    
+   mazeSizeMenu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
+              [('Small',               SMALL, None),
+	             ('Medium',              MEDIUM, None),
+               ('Large',               LARGE, None)])
+   mazeSizeMenu.set_center(True, True)
+   mazeSizeMenu.set_alignment('center','center')
+   
+   
+   mazeDiffMenu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
+              [('Easy',               EASY, None),
+	             ('Hard',              HARD, None)])
+   mazeDiffMenu.set_center(True, True)
+   mazeDiffMenu.set_alignment('center','center')
+   
    # Create the state variables (make them different so that the user event is
    # triggered at the start of the "while 1" loop so that the initial display
    # does not wait for user input)
    state = 0
    prev_state = 1
+   
+   mazeSize=-1
+   mazeDiff=-1
    
    #Profile stats
    #profile_name = ""
@@ -147,7 +175,7 @@ def main():
 
       # Get the next event
 		e = pygame.event.wait()
-      
+
 		if e.type == pygame.KEYDOWN or e.type == EVENT_CHANGE_STATE:
 			if state == MAIN:
 				if wii_status:
@@ -166,8 +194,18 @@ def main():
 				#thread.start_new_thread( scalesgui.connect_wiiboard, (screen, None ) )
 				state=MAIN
 			elif state == MAZE: 
-				PyMaze.run()
+				PyMaze.run(mazeSize, mazeDiff)
 				state=MAIN
+				mazeSize=-1
+				mazeDiff=-1
+			elif state == MAZESIZE: 
+				rect_list, mazeSize = mazeSizeMenu.update(e, state)
+				if mazeSize==SMALL or mazeSize==MEDIUM or mazeSize==LARGE:
+					state = MAZEDIFF
+			elif state == MAZEDIFF: 
+				rect_list, mazeDiff = mazeDiffMenu.update(e, state)
+				if mazeDiff==EASY or mazeDiff==HARD:
+					state = MAZE
 			elif state == CREATEPROFILE:
 				profile_info = create_profile(screen)
 				profile_path = "profiles/" + profile_info[0] + ".csv"
