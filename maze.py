@@ -8,8 +8,10 @@ class Maze:
     self.rows = rows
     self.cols = cols
     self.keep_going = 1
+    self.count=0
 
     self.maze = {}
+    
     for y in xrange(rows):
       for x in xrange(cols):
         cell = {'south' : 1, 'east' : 1, 'visited': 0}
@@ -17,7 +19,7 @@ class Maze:
 
   def generate(self, start_cell=None, stack=[]):
     """Generates a random maze using a magical simple recursive function."""
-
+    self.count = self.count+1
     if start_cell is None:
       start_cell = self.maze[(self.cols-1, self.rows-1)]
     

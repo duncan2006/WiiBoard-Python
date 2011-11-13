@@ -29,12 +29,13 @@ class Game:
   def start(self):
     self.maze_obj = Maze(*self.dim)# pass args to change maze size: Maze(10, 10)
     if self.diff == 0:
-      self.maze_obj.generate(self.maze_obj.maze[(0,0)])
+      self.maze_obj.generate(self.maze_obj.maze[(0,0)], [])
     else:
-      self.maze_obj.generate()
+      self.maze_obj.generate(None, [])
     self.draw_maze()
     self.reset_player()
     self.loop()
+    
 
   def reset_player(self):
     # Make the sprites for the player.
