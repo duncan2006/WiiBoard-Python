@@ -26,7 +26,7 @@ import time as ptime
 from pygame.locals import *
 from ConfigParser import ConfigParser
 from threading import Thread
-import wiimenu
+#import wiimenu
 
 class WeightSprite(pygame.sprite.Sprite):
 	"""This class describes a sprite containing the weight."""

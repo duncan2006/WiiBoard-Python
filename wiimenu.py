@@ -21,20 +21,25 @@ except:
 	sys.exit(1)
 
 from menu import *
-from image import *python
+from image import *
 from pygame.locals import *
+
 import scalesgui
 import thread
 import PyMaze
-import weighttracker
+import os
+import csv
+#import weighttracker
 
-MAIN            = 0
-TRACKWEIGHT     = 1
-SCALE           = 2
-CONNECTING      = 3
-MAZE            = 4
-EXIT            = 5
-CREATEPROFILE   = 6
+MAIN            	= 0
+TRACKWEIGHT     	= 1
+SCALE           	= 2
+CONNECTING      	= 3
+MAZE            	= 4
+EXIT            	= 5
+CREATEPROFILE   	= 6
+LOADPROFILE			= 7
+BACK					= 8
 
 
 def main():
@@ -47,34 +52,52 @@ def main():
    # Create a window of 800x600 pixels
    screen = pygame.display.set_mode((800, 600))
    pygame.display.set_caption("Wii Balance Board Physiotherapy")
+   
+   profiles = []
+   listing = os.listdir("profiles/")
+   i = 100
+   for infile in listing:
+		name = infile.replace(".csv", "")
+		menu_entry = (name, i, None)
+		profiles.append(menu_entry)
+		i += 1
 
+   profiles.append(('Back to Menu',	BACK, None))
+   
+   #print listing[0] + listing[1]
+   
    screen.fill(BLACK)
    pygame.display.flip()
 
    start_menu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
 	      [('Connect Wii Balance Board', CONNECTING, None),
 	       ('Create Profile',            CREATEPROFILE, None),
+	       ('Load Profile',					 LOADPROFILE, None),
 	       ('Exit',                      EXIT, None)])
-
    start_menu.set_center(True, True)
    start_menu.set_alignment('center', 'center')
  
    menu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
-              [('Create Profile',         CREATEPROFILE, None),
-	           ('Track Weight',           TRACKWEIGHT, None),
-               ('Scale',                  SCALE, None),
-               ('Maze',                   MAZE, None),
-               ('Exit',                   EXIT, None)])
-               
-               
+        [('Create Profile',         CREATEPROFILE, None),
+			('Track Weight',           TRACKWEIGHT, None),
+         ('Scale',                  SCALE, None),
+         ('Maze',                   MAZE, None),
+         ('Exit',                   EXIT, None)])
    menu.set_center(True, True)
    menu.set_alignment('center', 'center')
    
    connectMenu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
-              [('', 0, None)])
-              
+						[('', 0, None)])           
    connectMenu.set_center(True, True)
    connectMenu.set_alignment('bottom','center')
+   		
+   loadprof_menu = cMenu(100, 50, 20, 5, 'vertical', 100, screen, profiles)          
+   loadprof_menu.set_center(True, True)
+   loadprof_menu.set_alignment('center', 'center')
+   
+   #user_profile = open("profiles/Jay_Oatts.csv", 'w')
+   
+   #user_profile.write('Username,Height(in),Weight(lbs),BMI')
    
    # Create the state variables (make them different so that the user event is
    # triggered at the start of the "while 1" loop so that the initial display
@@ -83,9 +106,10 @@ def main():
    prev_state = 1
    
    #Profile stats
-   profile_name = ""
-   profile_feet = "__ft"
-   profile_inches = "__in"
+   #profile_name = ""
+   #profile_feet = "__ft"
+   #profile_inches = "__in"
+   profile_info = ["", "__ft__in"]
    
    # rect_list is the list of pygame.Rect's that will tell pygame where to
    # update the screen (there is no point in updating the entire screen if only
@@ -100,95 +124,167 @@ def main():
    random.seed()
 
    wii_status = False
+   load_status = False
    # The main while loop
    while 1:
       # Check if the state has changed, if it has, then post a user event to
       # the queue to force the menu to be shown at least once
       #print "beginning of while loop"
-      if prev_state != state:
-         pygame.event.post(pygame.event.Event(EVENT_CHANGE_STATE, key = 0))
-         prev_state = state
-         screen.fill(BLACK)
-         desc_font = pygame.font.Font(None, 24)    # Font to use
-         if wii_status!=False:
-            screen.blit(desc_font.render("Wiiboard is connected!", True, WHITE), (300, 570))
-         else:
-            screen.blit(desc_font.render("Wiiboard is not connected", True, WHITE), (300, 570))
+		if prev_state != state:
+			pygame.event.post(pygame.event.Event(EVENT_CHANGE_STATE, key = 0))
+			prev_state = state
+			screen.fill(BLACK)
+			desc_font = pygame.font.Font(None, 24)    # Font to use
+			if wii_status!=False:
+				screen.blit(desc_font.render("Wiiboard is connected!", True, WHITE), (300, 570))
+			else:
+				screen.blit(desc_font.render("Wiiboard is not connected", True, WHITE), (300, 570))
 
-	    screen.blit(desc_font.render("User: " + profile_name, True, WHITE), (0, 0))
-      screen.blit(desc_font.render("Height: " + profile_feet + " " + profile_inches, True, WHITE), (600, 0))
+		screen.blit(desc_font.render("User: " + profile_info[0], True, WHITE), (0, 0))
+		screen.blit(desc_font.render("Height: " + profile_info[1] , True, WHITE), (600, 0))
    
-      pygame.display.flip()
+		pygame.display.flip()
 
       # Get the next event
-      e = pygame.event.wait()
+		e = pygame.event.wait()
       
-      if e.type == pygame.KEYDOWN or e.type == EVENT_CHANGE_STATE:
-         if state == MAIN:
-	    if wii_status:
-            	rect_list, state = menu.update(e, state)
-	    else:
-            	rect_list, state = start_menu.update(e, state)
-         elif state == SCALE:
-            #rect_list, state = menu.update(e, state)
-            scalesgui.scalegui(screen)
-            state=MAIN            
-         elif state == CONNECTING:
-            rect_list, state = connectMenu.update(e, state)
-            wii_status = scalesgui.connect_wiiboard(screen)          
-            #thread.start_new_thread( scalesgui.connect_wiiboard, (screen, None ) )
-            state=MAIN
-         elif state == MAZE: 
-            PyMaze.run()
-            state=MAIN
-         elif state == CREATEPROFILE:
-            screen.fill(BLACK)
-            profile_name = ask(screen, "Name")
-            screen.fill(BLACK)
-            profile_feet = ask(screen, "Height (feet)") + "ft"
-            screen.fill(BLACK)
-            profile_inches = ask(screen, "Height (inches)") + "in"
-            state=MAIN
-         else:
-            pygame.quit()
-            sys.exit()
+		if e.type == pygame.KEYDOWN or e.type == EVENT_CHANGE_STATE:
+			if state == MAIN:
+				if wii_status:
+					rect_list, state = menu.update(e, state)
+				elif load_status:
+					rect_list, state = loadprof_menu.update(e, state)
+				else:
+					rect_list, state = start_menu.update(e, state)
+			elif state == SCALE:
+				#rect_list, state = menu.update(e, state)
+				scalesgui.scalegui(screen)
+				state=MAIN            
+			elif state == CONNECTING:
+				rect_list, state = connectMenu.update(e, state)
+				wii_status = scalesgui.connect_wiiboard(screen)          
+				#thread.start_new_thread( scalesgui.connect_wiiboard, (screen, None ) )
+				state=MAIN
+			elif state == MAZE: 
+				PyMaze.run()
+				state=MAIN
+			elif state == CREATEPROFILE:
+				profile_info = create_profile(screen)
+				profile_path = "profiles/" + profile_info[0] + ".csv"
+				if (os.path.isfile(profile_path)):
+					print "Username " + profile_info[0] + " already exists, please try a different name."
+					pygame.quit()
+					sys.exit()
+				else:
+					user_profile = open(profile_path, 'a')
+							
+				user_profile.write('Username,' + profile_info[0] + ',' + 'Height,' + profile_info[1] + '\n')
+				user_profile.write('Weight(lbs),BMI\n')        
+				
+				state=MAIN
+			elif state == LOADPROFILE:
+				#profile_info = load_profile(screen)
+				#load_profile(screen)
+				load_status = True
+				state=MAIN
+			elif state == BACK:
+				rect_list, state = menu.update(e, state)
+				load_status = False
+				state=MAIN
+			elif state >= 100:	
+				user_profile = open("profiles/" + listing[state-100], 'a+')
+				reader = csv.reader(user_profile)
+				for row in reader:
+					profile_info[0] = row[1]
+					profile_info[1] = row[3]
+					break
+				load_status = False
+				state=MAIN
+			else:
+				user_profile.close()
+				pygame.quit()
+				sys.exit()
 
       #print state
       # Quit if the user presses the exit button
-      if e.type == pygame.QUIT:
-         pygame.quit()
-         sys.exit()
-      if e.type == pygame.KEYDOWN:
-         if e.key == pygame.K_ESCAPE:
-            pygame.quit()
-            sys.exit()          
-            
-      # Update the screen
-      pygame.display.update(rect_list)
+		if e.type == pygame.QUIT:
+			pygame.quit()
+			sys.exit()
+		if e.type == pygame.KEYDOWN:
+			if e.key == pygame.K_ESCAPE:
+				pygame.quit()
+				sys.exit()          
+				
+		# Update the screen
+		pygame.display.update(rect_list)
 
-#Toggling fullscreen probably not a good idea
-def toggle_fullscreen():
-    screen = pygame.display.get_surface()
-    tmp = screen.convert()
-    caption = pygame.display.get_caption()
-    cursor = pygame.mouse.get_cursor()  # Duoas 16-04-2007 
-    
-    w,h = screen.get_width(),screen.get_height()
-    flags = screen.get_flags()
-    bits = screen.get_bitsize()
-    
-    pygame.display.quit()
-    pygame.display.init()
-    
-    screen = pygame.display.set_mode((w,h),flags^FULLSCREEN,bits)
-    screen.blit(tmp,(0,0))
-    pygame.display.set_caption(*caption)
- 
-    pygame.key.set_mods(0) #HACK: work-a-round for a SDL bug??
- 
-    pygame.mouse.set_cursor( *cursor )  # Duoas 16-04-2007
-    
-    return screen
+def create_profile(screen):
+		screen.fill(BLACK)
+		profile_name = ask(screen, "Name")
+		screen.fill(BLACK)
+		profile_feet = ask(screen, "Height (feet)") + "ft"
+		screen.fill(BLACK)
+		profile_inches = ask(screen, "Height (inches)") + "in"
+		profile_info = [profile_name, profile_feet + profile_inches]
+		return profile_info
+
+def load_profile(screen):
+		screen.fill(BLACK)
+		profiles = []
+		listing = os.listdir("profiles/")
+		i = 0
+		for infile in listing:
+			name = infile.replace(".csv", "")
+			menu_entry = (name, i, None)
+			profiles.append(menu_entry)
+			i += 1
+		
+		menu = cMenu(100, 50, 20, 5, 'vertical', 100, screen, profiles)          
+		menu.set_center(True, True)
+		menu.set_alignment('center', 'center')
+		
+		state = 0
+		prev_state = 1
+		
+		rect_list = []
+		
+		random.seed()
+		
+		while 1:
+		  # Check if the state has changed, if it has, then post a user event to
+		  # the queue to force the menu to be shown at least once
+		  #print "beginning of while loop"
+			if prev_state != state:
+				pygame.event.post(pygame.event.Event(EVENT_CHANGE_STATE, key = 0))
+				prev_state = state
+				screen.fill(BLACK)
+
+				pygame.display.flip()
+
+		    # Get the next event
+				e = pygame.event.poll()
+		    
+				if e.type == KEYDOWN or e.type == EVENT_CHANGE_STATE:
+					if state == MAIN:
+						rect_list, state = menu.update(e, state)
+		   
+					else:
+						pygame.quit()
+						sys.exit()
+			
+			# Quit if the user presses the exit button
+			if e.type == pygame.QUIT:
+				pygame.quit()
+				sys.exit()
+			if e.type == pygame.KEYDOWN:
+				if e.key == pygame.K_ESCAPE:
+					pygame.quit()
+					sys.exit()      
+					
+		   # Update the screen
+			pygame.display.update(rect_list)
+
+			#return profile_info
     
 def get_key():
   while 1:
