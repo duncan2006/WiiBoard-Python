@@ -88,21 +88,10 @@ def main():
    start_menu.set_alignment('center', 'center')
  
    menu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
-<<<<<<< HEAD
-         [('Create Profile',            CREATEPROFILE, None),
-	       ('Daily Measurements',        MEASUREMENTS, None),
-          ('Scale',                     SCALE, None),
+         [('Daily Measurements',        MEASUREMENTS, None),
+          ('Balance',                   DYNAMICBALANCE, None),
           ('Maze',                      MAZESIZE, None),
           ('Exit',                      EXIT, None)])
-=======
-              [('Create Profile',         CREATEPROFILE, None),
-	           ('Track Weight',           TRACKWEIGHT, None),
-               ('Scale',                  SCALE, None),
-               ('Balance',                  DYNAMICBALANCE, None),
-               ('Maze',                   MAZESIZE, None),
-               ('Exit',                   EXIT, None)])
->>>>>>> upstream/master
-               
 
    menu.set_center(True, True)
    menu.set_alignment('center', 'center')
@@ -122,7 +111,7 @@ def main():
    
    mazeSizeMenu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
               [('Small',               SMALL, None),
-	             ('Medium',              MEDIUM, None),
+	            ('Medium',              MEDIUM, None),
                ('Large',               LARGE, None)])
    mazeSizeMenu.set_center(True, True)
    mazeSizeMenu.set_alignment('center','center')
@@ -163,6 +152,8 @@ def main():
 
    wii_status = False
    load_status = False
+   profile_loaded = False
+   meas_results = [0, 0, 0]
    # The main while loop
    while 1:
       # Check if the state has changed, if it has, then post a user event to
@@ -188,7 +179,7 @@ def main():
 
 		if e.type == pygame.KEYDOWN or e.type == EVENT_CHANGE_STATE:
 			if state == MAIN:
-				if wii_status:
+				if (wii_status and profile_loaded):
 					rect_list, state = menu.update(e, state)
 				elif load_status:
 					rect_list, state = loadprof_menu.update(e, state)
@@ -197,18 +188,14 @@ def main():
 			elif state == SCALE:
 				#rect_list, state = menu.update(e, state)
 				scalesgui.scalegui(screen)
-<<<<<<< HEAD
 				state=MAIN
 			elif state == MEASUREMENTS:
-				scalesgui.bodymeasure(screen, int(profile_info[2]))
+				meas_results = scalesgui.bodymeasure(screen, int(profile_info[2]))
 				state=MAIN
-=======
-				state=MAIN 
 			elif state == DYNAMICBALANCE:
 				#rect_list, state = menu.update(e, state)
 				scalesgui.dynamic_balance(screen)
-				state=MAIN            
->>>>>>> upstream/master
+				state=MAIN
 			elif state == CONNECTING:
 				rect_list, state = connectMenu.update(e, state)
 				wii_status = scalesgui.connect_wiiboard(screen)          
@@ -232,14 +219,14 @@ def main():
 				profile_path = "profiles/" + profile_info[0] + ".csv"
 				if (os.path.isfile(profile_path)):
 					print "Username " + profile_info[0] + " already exists, please try a different name."
-					profile_info = ["", "__ft__in"]
+					profile_info = ["", "__ft__in", 0]
 					#ygame.quit()
 					#ys.exit()
 				else:
 					user_profile = open(profile_path, 'a')			
 					user_profile.write('Username,' + profile_info[0] + ',Height,' + profile_info[1] + ',Inches,' + str(profile_info[2]) + '\n')
-					user_profile.write('Weight(lbs),BMI\n')        
-				
+					user_profile.write('Weight(lbs),BMI,COB\n')        
+				profile_loaded = True
 				state=MAIN
 			elif state == LOADPROFILE:
 				#profile_info = load_profile(screen)
@@ -259,8 +246,10 @@ def main():
 					profile_info[2] = row[5] #Get height in inches from first row 
 					break
 				load_status = False
+				profile_loaded = True
 				state=MAIN
 			else:
+				user_profile.write(str(meas_results[0]) +',' + str(meas_results[1]) + ',' + str(meas_results[2]) + '\n')
 				user_profile.close()
 				pygame.quit()
 				sys.exit()

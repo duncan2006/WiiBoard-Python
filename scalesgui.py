@@ -33,7 +33,6 @@ from ConfigParser import ConfigParser
 from threading import Thread
 		
 class WeightSprite(pygame.sprite.Sprite):
-<<<<<<< HEAD
 	"""This class describes a sprite containing the weight."""
 	def __init__(self):
 		pygame.sprite.Sprite.__init__(self)
@@ -55,29 +54,6 @@ class WeightSprite(pygame.sprite.Sprite):
 
 		self.rect = self.image.get_rect()
 		self.rect.bottomright = screen_res
-=======
-   """This class describes a sprite containing the weight."""
-   def __init__(self):
-      pygame.sprite.Sprite.__init__(self)
-      self.weight = 0.0
-      self.update()
-      
-   def update(self):
-      global screen_res, sys_font_weight_fgcolour, sys_font_weight, screen_res
-      
-      if self.weight > 2:
-         self.text = "%.2f" % self.weight
-      else:
-         self.text = "_.__"
-         #print "LESS THAN 2"
-      #while len(self.text) < 4:
-      #   self.text = "0" + self.text
-         
-      self.image = sys_font_weight.render(self.text, True, sys_font_weight_fgcolour)
-
-      self.rect = self.image.get_rect()
-      self.rect.bottomright = screen_res
->>>>>>> upstream/master
 
 class BMIsprite(pygame.sprite.Sprite):
 	"""This class describes a sprite containing the BMI."""
@@ -388,7 +364,6 @@ def scalegui(screen):
    weight_sprite.weight = 40.33
    frame = 0
    while True:
-<<<<<<< HEAD
 	   for event in pygame.event.get():
 		   if event.type == KEYDOWN:
 			   return
@@ -520,9 +495,18 @@ def bodymeasure(screen, height):
    				enter_pressed = True;
    	screen.blit(sys_font_weight.render("Press Enter to begin measuring...", True, WHITE), (100, 300))
    	pygame.display.flip()
-   	pygame.time.wait(refresh_delay)		
+   	pygame.time.wait(refresh_delay)
+   
+   start_time = time.time()
+   cur_time = time.time()
+   
+   count = 0
+   total_x = 0
+   total_y = 0
+   total_weight = 0
+   total_bmi = 0			
 
-   while True:
+   while ((cur_time - start_time) < 10):
 	   for event in pygame.event.get():
 		   if event.type == KEYDOWN:
 			   return
@@ -557,6 +541,11 @@ def bodymeasure(screen, height):
 	   #print "readings:",readings
 
 	   screen.fill(bgcolour) # blank the screen.
+	   
+	   if ((cur_time - start_time) < 5):
+	   	screen.blit(sys_font_weight.render("Calibrating, please wait...", True, WHITE), (150, 0))
+	   else:
+	   	screen.blit(sys_font_weight.render("Measuring, stand still...", True, WHITE), (150, 0))
 	
 	   # line up the lines
 	   pygame.draw.line(screen, (0,0,255), (screen_res[0]/2,0), (screen_res[0]/2,screen_res[1]), 2)
@@ -571,69 +560,63 @@ def bodymeasure(screen, height):
 	
 	   screen.blit(weight_sprite.image, weight_sprite.rect)
 	   screen.blit(BMI_sprite.image, BMI_sprite.rect)
-	   
-	   
-	
+	   if ((cur_time - start_time) > 5):
+	   	total_weight += weight_sprite.weight
+	   	total_bmi += BMI_sprite.bmi
+	   	
 	   xpos = (x_balance * (screen_res[0]/2)) + (screen_res[0]/2)
 	   ypos = (y_balance * (screen_res[1]/2)) + (screen_res[1]/2)
+	   if ((cur_time - start_time) > 5):
+	   	total_x += xpos
+	   	total_y += ypos
 		
 	   #print "balance:", x_balance, y_balance
 	   #print "position:", xpos,ypos
 	   pygame.draw.circle(screen, (255,0,0), (int(xpos), int(ypos)), 5)
 	   pygame.display.flip()
-	   pygame.time.wait(refresh_delay)		
-=======
-      for event in pygame.event.get():
-         if event.type == KEYDOWN:
-            return
-            
-      wiimote.request_status()
-      frame = frame + 1
-      if frame == 50:
-         frame = 0
-         weight = (calcweight(wiimote.state['balance'], named_calibration) / 100.0)
-         #print "%.2fkg" % weight
-         weight_sprite.weight = weight
+	   pygame.time.wait(refresh_delay)
+	   if ((cur_time - start_time) > 5):
+	   	count += 1
+	   cur_time = time.time()	
    
+   screen.fill(bgcolour) # blank the screen.
+   # line up the lines
+   pygame.draw.line(screen, (0,0,255), (screen_res[0]/2,0), (screen_res[0]/2,screen_res[1]), 2)
+   pygame.draw.line(screen, (0,0,255), (0,screen_res[1]/2), (screen_res[0],screen_res[1]/2), 2)
    
-      readings = wiimote.state['balance']
-   
-      try:
-         x_balance = (float(gsc(readings,'right_top')+gsc(readings,'right_bottom'))) / (float(gsc(readings,'left_top')+gsc(readings,'left_bottom')))
-         if x_balance > 1:
-            x_balance = (((float(gsc(readings,'left_top')+gsc(readings,'left_bottom'))) / (float(gsc(readings,'right_top')+gsc(readings,'right_bottom'))))*-1.)+1.
-         else:
-            x_balance = x_balance -1.
-         y_balance = (float(gsc(readings,'left_bottom')+gsc(readings,'right_bottom'))) / (float(gsc(readings,'left_top')+gsc(readings,'right_top')))
-         if y_balance > 1:
-            y_balance = (((float(gsc(readings,'left_top')+gsc(readings,'right_top'))) / (float(gsc(readings,'left_bottom')+gsc(readings,'right_bottom'))))*-1.)+1.
-         else:
-            y_balance = y_balance -1.
-      except:
-         x_balance = 1.
-         y_balance = 1.
-   
-      #print "readings:",readings
-
-      screen.fill(bgcolour) # blank the screen.
-   
-      # line up the lines
-      pygame.draw.line(screen, (0,0,255), (screen_res[0]/2,0), (screen_res[0]/2,screen_res[1]), 2)
-      pygame.draw.line(screen, (0,0,255), (0,screen_res[1]/2), (screen_res[0],screen_res[1]/2), 2)
-   
-      weight_sprite.update()
-   
-      screen.blit(weight_sprite.image, weight_sprite.rect)
-   
-      xpos = (x_balance * (screen_res[0]/2)) + (screen_res[0]/2)
-      ypos = (y_balance * (screen_res[1]/2)) + (screen_res[1]/2)
-      
-      #print "balance:", x_balance, y_balance
-      #print "position:", xpos,ypos
-      pygame.draw.circle(screen, (255,0,0), (int(xpos), int(ypos)), 5)
-      pygame.display.flip()
-      pygame.time.wait(refresh_delay)   
->>>>>>> upstream/master
+   avg_weight = total_weight / count
+   avg_bmi = total_bmi / count
+   avg_x = total_x / count
+   avg_y = total_y / count
+   right = (avg_x / screen_res[0]) * 100 #Percent weight on right side
+   left = 100 - right					#Left side
+   back = (avg_y / screen_res[1]) * 100 #Back
+   front = 100 - back					#Front
+   cob_score = 500 - ((abs(right-50) + abs(back-50))*10)
+     
+   bmi_result = "Uncalculated"
+   if avg_bmi < 18.5:
+   	bmi_result = "Underweight"
+   elif avg_bmi < 25:
+   	bmi_result = "Normal"
+   elif avg_bmi < 30:
+   	bmi_result = "Overweight"
+   else:
+   	bmi_result = "Obese"
+   	
+   screen.blit(sys_font_weight.render("Press Enter to return to menu...", True, WHITE), (100, 0))
+   screen.blit(sys_font_weight.render("Weight: " + "%.2f" % avg_weight + " lbs", True, WHITE), (25, 75))
+   screen.blit(sys_font_weight.render("BMI: " + "%.2f" % avg_bmi + "   " + bmi_result, True, WHITE), (25, 150))
+   screen.blit(sys_font_weight.render("Center of Balance: " + "%.1f" % right + "R " + "%.1f" % left + "L " + "%.1f" % back + "B " + "%.1f" % front + "F "  , True, WHITE), (25, 225))
+   pygame.draw.circle(screen, (255,0,0), (int(avg_x), int(avg_y)), 5)
+   pygame.display.flip()
+   pygame.time.wait(refresh_delay)
+   results = [avg_weight, avg_bmi, cob_score]
+   while True:
+   	for event in pygame.event.get():
+   		if event.type == KEYDOWN:
+   			if event.key == pygame.K_RETURN:
+   				return results
 
 def setup_calibration():
    global named_calibration, wiimote
