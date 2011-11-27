@@ -31,7 +31,7 @@ import time as ptime
 from pygame.locals import *
 from ConfigParser import ConfigParser
 from threading import Thread
-
+		
 class WeightSprite(pygame.sprite.Sprite):
 	"""This class describes a sprite containing the weight."""
 	def __init__(self):
@@ -43,7 +43,7 @@ class WeightSprite(pygame.sprite.Sprite):
 		global screen_res, sys_font_weight_fgcolour, sys_font_weight, screen_res
 		
 		if self.weight > 2:
-			self.text = "%.2f" % self.weight
+				self.text = "%.2f" % self.weight + " lbs"
 		else:
 			self.text = "_.__"
 			#print "LESS THAN 2"
@@ -54,6 +54,29 @@ class WeightSprite(pygame.sprite.Sprite):
 
 		self.rect = self.image.get_rect()
 		self.rect.bottomright = screen_res
+
+class BMIsprite(pygame.sprite.Sprite):
+	"""This class describes a sprite containing the BMI."""
+	def __init__(self):
+		pygame.sprite.Sprite.__init__(self)
+		self.bmi = 0.0
+		self.update()
+		
+	def update(self):
+		global screen_res, sys_font_weight_fgcolour, sys_font_weight, screen_res
+		
+		if self.bmi > 1:
+			self.text = "%.2f" % self.bmi + " BMI"
+		else:
+			self.text = "_.__"
+			#print "LESS THAN 2"
+		#while len(self.text) < 4:
+		#	self.text = "0" + self.text
+			
+		self.image = sys_font_weight.render(self.text, True, sys_font_weight_fgcolour)
+
+		self.rect = self.image.get_rect()
+		self.rect.bottomleft = (0, 600)
 
 def quit_app():
 	pygame.quit()
@@ -230,11 +253,154 @@ def scalegui(screen):
 	   xpos = (x_balance * (screen_res[0]/2)) + (screen_res[0]/2)
 	   ypos = (y_balance * (screen_res[1]/2)) + (screen_res[1]/2)
 		
-	   print "balance:", x_balance, y_balance
+	   #print "balance:", x_balance, y_balance
 	   #print "position:", xpos,ypos
 	   pygame.draw.circle(screen, (255,0,0), (int(xpos), int(ypos)), 5)
 	   pygame.display.flip()
-	   pygame.time.wait(refresh_delay)	
+	   pygame.time.wait(refresh_delay)
+	   
+def bodymeasure(screen, height):
+   global wiimote, named_calibration
+   if wiimote == None:
+      return
+   wiimote.rpt_mode = cwiid.RPT_BALANCE | cwiid.RPT_BTN
+   wiimote.request_status()
+
+   '''
+   if wiimote.state['ext_type'] != cwiid.EXT_BALANCE:
+	   print 'This program only supports the Wii Balance Board'
+	   wiimote.close()
+	   sys.exit(1)
+   '''
+   balance_calibration = wiimote.get_balance_cal()
+   named_calibration = { 'right_top': balance_calibration[0],
+					     'right_bottom': balance_calibration[1],
+					     'left_top': balance_calibration[2],
+					     'left_bottom': balance_calibration[3],
+					   }
+
+   system_file = "system.ini"
+
+   if not os.path.lexists(system_file):
+	   print "Problem: System configuration file (system.ini) doesn't exist."
+	   sys.exit(1)
+
+   sconf = ConfigParser()
+   sconf.read(system_file)
+
+
+   xdisplay = sconf.get("display", "xdisplay")
+   if len(xdisplay) > 1:
+	   # using alternate display.
+	   print "Attempting to use device", xdisplay, "instead of the default."
+	   os.putenv("DISPLAY", xdisplay)
+
+   #pygame.init()
+   global sys_font_weight, sys_font_weight_fgcolour, screen_res
+   sys_font_weight = pygame.font.SysFont(sconf.get("font_weight", "face"), int(sconf.get("font_weight", "size")))
+
+   sys_font_weight.set_italic(False)
+   sys_font_weight.set_underline(False)
+
+   bgcolour = (0, 0, 0)
+   sys_font_weight_fgcolour = (255, 255, 255)
+   screen_res = (int(sconf.get("display", "width")), int(sconf.get("display", "height")))
+   refresh_delay = int(sconf.get("display", "refresh_delay"))
+
+   screen_options = 0
+   if int(sconf.get("display", "fullscreen")) >= 1 and len(xdisplay) <= 1:
+	   screen_options = screen_options | pygame.FULLSCREEN
+
+   if int(sconf.get("display", "double_buffers")) >= 1:
+	   screen_options = screen_options | pygame.DOUBLEBUF
+
+   if int(sconf.get("display", "hardware_surface")) >= 1:
+	   screen_options = screen_options | pygame.HWSURFACE
+
+   if int(sconf.get("display", "opengl")) >= 1:
+	   screen_options = screen_options | pygame.OPENGL
+   
+   #screen = pygame.display.set_mode(screen_res, screen_options)
+   pygame.display.set_caption("Weight & BMI Measurement")
+   
+   weight_sprite = WeightSprite()
+   BMI_sprite = BMIsprite()
+   weight_sprite.weight = 00.00
+   BMI_sprite.bmi == 00.00
+   frame = 0
+   
+   screen.fill(bgcolour)
+   enter_pressed = False
+   
+   while (not enter_pressed):
+   	for event in pygame.event.get():
+   		if event.type == KEYDOWN:
+   			if event.key == pygame.K_RETURN:
+   				enter_pressed = True;
+   	screen.blit(sys_font_weight.render("Press Enter to begin measuring...", True, WHITE), (100, 300))
+   	pygame.display.flip()
+   	pygame.time.wait(refresh_delay)		
+
+   while True:
+	   for event in pygame.event.get():
+		   if event.type == KEYDOWN:
+			   return
+				
+	   wiimote.request_status()
+	   frame = frame + 1
+	   if frame == 50:
+		   frame = 0
+		   weight = ((calcweight(wiimote.state['balance'], named_calibration) / 100.0) * 2.20462262) #Weight in lbs
+		   #print "%.2fkg" % weight
+		   weight_sprite.weight = weight
+		   BMI_sprite.bmi = ((weight) / ((height)**2)) * 703
+	
+	
+	   readings = wiimote.state['balance']
+	
+	   try:
+		   x_balance = (float(gsc(readings,'right_top')+gsc(readings,'right_bottom'))) / (float(gsc(readings,'left_top')+gsc(readings,'left_bottom')))
+		   if x_balance > 1:
+			   x_balance = (((float(gsc(readings,'left_top')+gsc(readings,'left_bottom'))) / (float(gsc(readings,'right_top')+gsc(readings,'right_bottom'))))*-1.)+1.
+		   else:
+			   x_balance = x_balance -1.
+		   y_balance = (float(gsc(readings,'left_bottom')+gsc(readings,'right_bottom'))) / (float(gsc(readings,'left_top')+gsc(readings,'right_top')))
+		   if y_balance > 1:
+			   y_balance = (((float(gsc(readings,'left_top')+gsc(readings,'right_top'))) / (float(gsc(readings,'left_bottom')+gsc(readings,'right_bottom'))))*-1.)+1.
+		   else:
+			   y_balance = y_balance -1.
+	   except:
+		   x_balance = 1.
+		   y_balance = 1.
+	
+	   #print "readings:",readings
+
+	   screen.fill(bgcolour) # blank the screen.
+	
+	   # line up the lines
+	   pygame.draw.line(screen, (0,0,255), (screen_res[0]/2,0), (screen_res[0]/2,screen_res[1]), 2)
+	   pygame.draw.line(screen, (0,0,255), (0,screen_res[1]/2), (screen_res[0],screen_res[1]/2), 2)
+	
+	   #weight_sprite.update()
+	
+	   #screen.blit(weight_sprite.image, weight_sprite.rect)
+	   
+	   weight_sprite.update()
+	   BMI_sprite.update()
+	
+	   screen.blit(weight_sprite.image, weight_sprite.rect)
+	   screen.blit(BMI_sprite.image, BMI_sprite.rect)
+	   
+	   
+	
+	   xpos = (x_balance * (screen_res[0]/2)) + (screen_res[0]/2)
+	   ypos = (y_balance * (screen_res[1]/2)) + (screen_res[1]/2)
+		
+	   #print "balance:", x_balance, y_balance
+	   #print "position:", xpos,ypos
+	   pygame.draw.circle(screen, (255,0,0), (int(xpos), int(ypos)), 5)
+	   pygame.display.flip()
+	   pygame.time.wait(refresh_delay)		
 
 def setup_calibration():
    global named_calibration, wiimote

@@ -33,7 +33,7 @@ import csv
 #import weighttracker
 
 MAIN            	= 0
-TRACKWEIGHT     	= 1
+MEASUREMENTS     	= 1
 SCALE           	= 2
 CONNECTING      	= 3
 MAZE            	= 4
@@ -87,11 +87,11 @@ def main():
    start_menu.set_alignment('center', 'center')
  
    menu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
-              [('Create Profile',         CREATEPROFILE, None),
-	           ('Track Weight',           TRACKWEIGHT, None),
-               ('Scale',                  SCALE, None),
-               ('Maze',                   MAZESIZE, None),
-               ('Exit',                   EXIT, None)])
+         [('Create Profile',            CREATEPROFILE, None),
+	       ('Daily Measurements',        MEASUREMENTS, None),
+          ('Scale',                     SCALE, None),
+          ('Maze',                      MAZESIZE, None),
+          ('Exit',                      EXIT, None)])
                
 
    menu.set_center(True, True)
@@ -137,7 +137,7 @@ def main():
    #profile_name = ""
    #profile_feet = "__ft"
    #profile_inches = "__in"
-   profile_info = ["", "__ft__in"]
+   profile_info = ["", "__ft__in", 0]
    
    # rect_list is the list of pygame.Rect's that will tell pygame where to
    # update the screen (there is no point in updating the entire screen if only
@@ -187,7 +187,10 @@ def main():
 			elif state == SCALE:
 				#rect_list, state = menu.update(e, state)
 				scalesgui.scalegui(screen)
-				state=MAIN            
+				state=MAIN
+			elif state == MEASUREMENTS:
+				scalesgui.bodymeasure(screen, int(profile_info[2]))
+				state=MAIN
 			elif state == CONNECTING:
 				rect_list, state = connectMenu.update(e, state)
 				wii_status = scalesgui.connect_wiiboard(screen)          
@@ -211,13 +214,13 @@ def main():
 				profile_path = "profiles/" + profile_info[0] + ".csv"
 				if (os.path.isfile(profile_path)):
 					print "Username " + profile_info[0] + " already exists, please try a different name."
-					pygame.quit()
-					sys.exit()
+					profile_info = ["", "__ft__in"]
+					#ygame.quit()
+					#ys.exit()
 				else:
-					user_profile = open(profile_path, 'a')
-							
-				user_profile.write('Username,' + profile_info[0] + ',' + 'Height,' + profile_info[1] + '\n')
-				user_profile.write('Weight(lbs),BMI\n')        
+					user_profile = open(profile_path, 'a')			
+					user_profile.write('Username,' + profile_info[0] + ',Height,' + profile_info[1] + ',Inches,' + str(profile_info[2]) + '\n')
+					user_profile.write('Weight(lbs),BMI\n')        
 				
 				state=MAIN
 			elif state == LOADPROFILE:
@@ -233,8 +236,9 @@ def main():
 				user_profile = open("profiles/" + listing[state-100], 'a+')
 				reader = csv.reader(user_profile)
 				for row in reader:
-					profile_info[0] = row[1]
-					profile_info[1] = row[3]
+					profile_info[0] = row[1] #Get name from first row
+					profile_info[1] = row[3] #Get height from first row
+					profile_info[2] = row[5] #Get height in inches from first row 
 					break
 				load_status = False
 				state=MAIN
@@ -260,10 +264,11 @@ def create_profile(screen):
 		screen.fill(BLACK)
 		profile_name = ask(screen, "Name")
 		screen.fill(BLACK)
-		profile_feet = ask(screen, "Height (feet)") + "ft"
+		profile_feet = ask(screen, "Height (feet)")
 		screen.fill(BLACK)
-		profile_inches = ask(screen, "Height (inches)") + "in"
-		profile_info = [profile_name, profile_feet + profile_inches]
+		profile_inches = ask(screen, "Height (inches)")
+		profile_height = int(profile_feet) * 12 + int(profile_inches)
+		profile_info = [profile_name, profile_feet + "ft" + profile_inches + "in", profile_height ]
 		return profile_info
 
 def load_profile(screen):
