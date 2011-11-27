@@ -41,6 +41,7 @@ EXIT            	= 5
 CREATEPROFILE   	= 6
 LOADPROFILE			= 7
 BACK					= 8
+DYNAMICBALANCE    = 16
 
 #Maze variables
 MAZESIZE        = 9
@@ -87,11 +88,20 @@ def main():
    start_menu.set_alignment('center', 'center')
  
    menu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
+<<<<<<< HEAD
          [('Create Profile',            CREATEPROFILE, None),
 	       ('Daily Measurements',        MEASUREMENTS, None),
           ('Scale',                     SCALE, None),
           ('Maze',                      MAZESIZE, None),
           ('Exit',                      EXIT, None)])
+=======
+              [('Create Profile',         CREATEPROFILE, None),
+	           ('Track Weight',           TRACKWEIGHT, None),
+               ('Scale',                  SCALE, None),
+               ('Balance',                  DYNAMICBALANCE, None),
+               ('Maze',                   MAZESIZE, None),
+               ('Exit',                   EXIT, None)])
+>>>>>>> upstream/master
                
 
    menu.set_center(True, True)
@@ -187,10 +197,18 @@ def main():
 			elif state == SCALE:
 				#rect_list, state = menu.update(e, state)
 				scalesgui.scalegui(screen)
+<<<<<<< HEAD
 				state=MAIN
 			elif state == MEASUREMENTS:
 				scalesgui.bodymeasure(screen, int(profile_info[2]))
 				state=MAIN
+=======
+				state=MAIN 
+			elif state == DYNAMICBALANCE:
+				#rect_list, state = menu.update(e, state)
+				scalesgui.dynamic_balance(screen)
+				state=MAIN            
+>>>>>>> upstream/master
 			elif state == CONNECTING:
 				rect_list, state = connectMenu.update(e, state)
 				wii_status = scalesgui.connect_wiiboard(screen)          
