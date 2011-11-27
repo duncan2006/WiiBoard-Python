@@ -41,6 +41,7 @@ EXIT            	= 5
 CREATEPROFILE   	= 6
 LOADPROFILE			= 7
 BACK					= 8
+DYNAMICBALANCE    = 16
 
 #Maze variables
 MAZESIZE        = 9
@@ -90,6 +91,7 @@ def main():
               [('Create Profile',         CREATEPROFILE, None),
 	           ('Track Weight',           TRACKWEIGHT, None),
                ('Scale',                  SCALE, None),
+               ('Balance',                  DYNAMICBALANCE, None),
                ('Maze',                   MAZESIZE, None),
                ('Exit',                   EXIT, None)])
                
@@ -187,6 +189,10 @@ def main():
 			elif state == SCALE:
 				#rect_list, state = menu.update(e, state)
 				scalesgui.scalegui(screen)
+				state=MAIN 
+			elif state == DYNAMICBALANCE:
+				#rect_list, state = menu.update(e, state)
+				scalesgui.dynamic_balance(screen)
 				state=MAIN            
 			elif state == CONNECTING:
 				rect_list, state = connectMenu.update(e, state)
