@@ -219,12 +219,6 @@ def dynamic_balance(screen):
       
       wiimote.request_status()
       frame = frame + 1
-      if frame == 50:
-         frame = 0
-         weight = (calcweight(wiimote.state['balance'], named_calibration) / 100.0)
-         #print "%.2fkg" % weight
-         weight_sprite.weight = weight
-   
    
       readings = wiimote.state['balance']
       
@@ -243,31 +237,18 @@ def dynamic_balance(screen):
          x_balance = 1.
          y_balance = 1.
    
-      #print "readings:",readings
 
       screen.fill(bgcolour) # blank the screen.
-   
-      # line up the lines
-      #pygame.draw.line(screen, (0,0,255), (screen_res[0]/2,0), (screen_res[0]/2,screen_res[1]), 2)
-      #pygame.draw.line(screen, (0,0,255), (0,screen_res[1]/2), (screen_res[0],screen_res[1]/2), 2)
-   
-      weight_sprite.update()
-   
-      screen.blit(weight_sprite.image, weight_sprite.rect)
    
       xpos = (x_balance * (screen_res[0]/2)) + (screen_res[0]/2)
       ypos = (y_balance * (screen_res[1]/2)) + (screen_res[1]/2)
       
-      #print "balance:", x_balance, y_balance
-      #print "position:", xpos,ypos
       
       #draw the box to stay in
       pygame.draw.rect(screen, (0,0,255), (min_x, min_y, x_size, y_size), 0)
       
       cur_time = time.time()
-      #print "(",xpos, ypos, ")", max_x, min_x, max_y, min_y
       if (xpos >= min_x and xpos <= max_x) and (ypos >= min_y and ypos <= max_y):
-         #print "inside box"
          if box_start == 0:
             box_start = cur_time
       else:
@@ -275,8 +256,12 @@ def dynamic_balance(screen):
          
       if cur_time - box_start > 3 and box_start != 0:
          boxes_completed = boxes_completed + 1
-         x_size = x_size-10
-         y_size = y_size-10
+         x_size = x_size-25
+         y_size = y_size-25
+         if x_size < 10:
+            x_size = 10
+            y_size = 10
+         
          box_start = 0
          min_x = random.randrange(0, screen_res[0]-x_size, 1)
          max_x = min_x + x_size
@@ -286,10 +271,23 @@ def dynamic_balance(screen):
          
          
       if cur_time - start_time > 30:
-         print "Boxes completed: ", boxes_completed
-         return
+         return         
          
       pygame.draw.circle(screen, (255,0,0), (int(xpos), int(ypos)), 5)
+      
+      time_left = 30 - (cur_time-start_time)
+      time_disp = "%.2f" % time_left      
+      font = pygame.font.Font(None, 24)
+      screen.blit(font.render(time_disp, True, WHITE), (15, 30)) 
+      
+      if box_start != 0:
+         box_time = cur_time - box_start
+      else:
+         box_time = 0
+      
+      box_disp = "%.2f" % box_time
+      screen.blit(font.render(box_disp, True, WHITE), (600, 30))
+      
       pygame.display.flip()
       pygame.time.wait(refresh_delay)
 
