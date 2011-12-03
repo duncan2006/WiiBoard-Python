@@ -33,36 +33,38 @@ import csv
 #import weighttracker
 
 MAIN            	= 0
-MEASUREMENTS     	= 1
-SCALE           	= 2
-CONNECTING      	= 3
-MAZE            	= 4
-EXIT            	= 5
-CREATEPROFILE   	= 6
-LOADPROFILE			= 7
-BACK					= 8
-DYNAMICBALANCE    = 16
+EXIT					= 1
+BACK					= 2
+CONNECTING			= 3
+CREATEPROFILE		= 4
+LOADPROFILE       = 5
+MEASUREMENTS      = 6
+SINGLELEG			= 7
+DYNAMICBALANCE 	= 8
+STOPANDGO			= 9
+MAZE					= 10
+DISPLAYRESULTS		= 11
 
 #Maze variables
-MAZESIZE        = 9
-MAZEDIFF        = 10
-SMALL           = 11
-MEDIUM          = 12
-LARGE           = 13
-EASY            = 14
-HARD            = 15
+MAZESIZE        	= 20
+MAZEDIFF        	= 21
+SMALL           	= 22
+MEDIUM          	= 23
+LARGE           	= 24
+EASY            	= 25
+HARD            	= 26
 
 def main():
    # Uncomment this to center the window on the computer screen
    os.environ['SDL_VIDEO_CENTERED'] = '1'
-   
    # Initialize Pygame
    pygame.init()
-
    # Create a window of 800x600 pixels
    screen = pygame.display.set_mode((800, 600))
+   #Add caption to top of window
    pygame.display.set_caption("Wii Balance Board Physiotherapy")
    
+   #Create profile loading menu dynamically
    profiles = []
    listing = os.listdir("profiles/")
    i = 100
@@ -74,10 +76,8 @@ def main():
 
    profiles.append(('Back to Menu',	BACK, None))
    
-   #print listing[0] + listing[1]
    
-   screen.fill(BLACK)
-   pygame.display.flip()
+
 
    start_menu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
 	      [('Connect Wii Balance Board', CONNECTING, None),
@@ -122,6 +122,10 @@ def main():
 	             ('Hard',              HARD, None)])
    mazeDiffMenu.set_center(True, True)
    mazeDiffMenu.set_alignment('center','center')
+   
+   
+   screen.fill(BLACK)
+   pygame.display.flip()
    
    # Create the state variables (make them different so that the user event is
    # triggered at the start of the "while 1" loop so that the initial display
@@ -185,10 +189,6 @@ def main():
 					rect_list, state = loadprof_menu.update(e, state)
 				else:
 					rect_list, state = start_menu.update(e, state)
-			elif state == SCALE:
-				#rect_list, state = menu.update(e, state)
-				scalesgui.scalegui(screen)
-				state=MAIN
 			elif state == MEASUREMENTS:
 				meas_results = scalesgui.bodymeasure(screen, int(profile_info[2]))
 				state=MAIN
