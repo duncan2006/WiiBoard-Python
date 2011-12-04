@@ -209,6 +209,7 @@ def dynamic_balance(screen):
    min_y = random.randrange(0, screen_res[1]-y_size, 1)
    max_y = min_y + y_size 
    
+   screen.fill(bgcolour)
    enter_pressed = False
    
    while (not enter_pressed):
@@ -216,9 +217,9 @@ def dynamic_balance(screen):
    		if event.type == KEYDOWN:
    			if event.key == pygame.K_RETURN:
    				enter_pressed = True;
-   	screen.blit(sys_font_weight.render("Press Enter to begin test...", True, WHITE), (150, 300))
-   	screen.blit(sys_font_weight.render("Shift weight to move red dot", True, WHITE), (0, 400))
-   	screen.blit(sys_font_weight.render("inside blue box for 3 seconds", True, WHITE), (0, 450))
+   	screen.blit(sys_font_weight.render("Press Enter to begin test...", True, WHITE), (150, 200))
+   	screen.blit(sys_font_weight.render("Shift weight to move red dot", True, WHITE), (0, 250))
+   	screen.blit(sys_font_weight.render("inside blue box for 3 seconds", True, WHITE), (0, 300))
    	pygame.display.flip()
    	pygame.time.wait(refresh_delay)
    
@@ -366,8 +367,20 @@ def stop_go(screen):
    #screen = pygame.display.set_mode(screen_res, screen_options)
    #pygame.display.set_caption("dynamic balance")
 
-   weight_sprite = WeightSprite()
-   weight_sprite.weight = 40.33
+   screen.fill(bgcolour)
+   enter_pressed = False
+
+   while (not enter_pressed):
+   	for event in pygame.event.get():
+   		if event.type == KEYDOWN:
+   			if event.key == pygame.K_RETURN:
+   				enter_pressed = True;
+   	screen.blit(sys_font_weight.render("Press Enter to begin test...", True, WHITE), (200, 200))
+   	screen.blit(sys_font_weight.render("Walk in place on the balance board while", True, WHITE), (150, 250))
+   	screen.blit(sys_font_weight.render("the light is green, stand still when red", True, WHITE), (150, 300))
+   	pygame.display.flip()
+   	pygame.time.wait(refresh_delay)
+
    frame = 0
    start_time = time.time()
    cur_time = start_time
@@ -377,6 +390,11 @@ def stop_go(screen):
    
    go_end_time = go + cur_time
    stop_end_time = stop + go + cur_time
+   stop_total_time = 0
+   left = True
+   right = False
+   steps = 0
+   
    while True:
       for event in pygame.event.get():
          if event.type == KEYDOWN:
@@ -413,24 +431,36 @@ def stop_go(screen):
       
       #draw the box to stay in
       if cur_time < go_end_time:
-         if xpos < (screen_res[0]/2)-100:
-            pygame.draw.rect(screen, (0,0,255), (screen_res[0]/2, 0, screen_res[0]/2, screen_res[1]), 0)
-         elif xpos > (screen_res[0]/2)+100:           
-            pygame.draw.rect(screen, (0,0,255), (0, 0, screen_res[0]/2, screen_res[1]), 0)
-                  
+         if xpos < (screen_res[0]/2)-150:
+         	if right:
+         		right = False
+         		left = True
+         		steps += 1
+      		pygame.draw.rect(screen, (0,0,255), (0, 0, screen_res[0]/2, screen_res[1]), 0)
+         elif xpos > (screen_res[0]/2)+150:
+         	if left:
+         		right = True
+         		left = False
+         		steps += 1                 
+      		pygame.draw.rect(screen, (0,0,255), (screen_res[0]/2, 0, screen_res[0]/2, screen_res[1]), 0)        
          
-      if cur_time - start_time > 30:
-         return         
-         
-      time_left = 30 - (cur_time-start_time)
-      time_disp = "%.2f" % time_left      
-      font = pygame.font.Font(None, 24)
-      screen.blit(font.render(time_disp, True, WHITE), (15, 30)) 
       
       if (cur_time < go_end_time):
          pygame.draw.circle(screen, (0,255,0), (screen_res[0]/2, 25), 20)
       else:
-         pygame.draw.circle(screen, (255,0,0), (screen_res[0]/2, 25), 20)
+      	#Stopped
+      	stop_total_time += (cur_time - go_end_time)    	
+      	pygame.draw.circle(screen, (255,0,0), (screen_res[0]/2, 25), 20)
+         
+      time_left = 30 - (cur_time-start_time-stop_total_time)
+      time_disp = "%.2f" % time_left      
+      font = pygame.font.Font(None, 24)
+      screen.blit(font.render(time_disp, True, WHITE), (15, 30))
+      screen.blit(font.render(str(steps) + " steps", True, WHITE), (300, 30)) 
+      
+               
+      if time_left <= 0:
+         return   
       
       pygame.display.flip()
       pygame.time.wait(refresh_delay)
