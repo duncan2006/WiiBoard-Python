@@ -251,6 +251,7 @@ def main():
 				meas_results[4] = dbal_results
 				state=MAIN
 			elif state == STOPANDGO:
+				scalesgui.stop_go(screen)
 				state=MAIN	
 			elif state == MAZE: 
 				maze_result = PyMaze.run(mazeSize, mazeDiff)
