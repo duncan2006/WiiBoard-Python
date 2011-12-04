@@ -30,7 +30,7 @@ import PyMaze
 
 import os
 import csv
-#import weighttracker
+import datetime
 
 MAIN            	= 0
 EXIT					= 1
@@ -54,6 +54,10 @@ LARGE           	= 24
 EASY            	= 25
 HARD            	= 26
 
+
+
+#Profile loading defaults to 100+
+
 def main():
    # Uncomment this to center the window on the computer screen
    os.environ['SDL_VIDEO_CENTERED'] = '1'
@@ -76,39 +80,39 @@ def main():
 
    profiles.append(('Back to Menu',	BACK, None))
    
-   
-
-
+   #Create start menu for initial display
    start_menu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
-	      [('Connect Wii Balance Board', CONNECTING, None),
+	      [('Connect Balance Board',     CONNECTING, None),
 	       ('Create Profile',            CREATEPROFILE, None),
 	       ('Load Profile',					 LOADPROFILE, None),
 	       ('Exit',                      EXIT, None)])
    start_menu.set_center(True, True)
    start_menu.set_alignment('center', 'center')
  
+   #Menu after board connected and profile loaded
    menu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
          [('Daily Measurements',        MEASUREMENTS, None),
-          ('Balance',                   DYNAMICBALANCE, None),
+          ('Single Leg Balance',			 SINGLELEG, None),
+          ('Dynamic Balance',           DYNAMICBALANCE, None),
+          ('Stop & Go',						 STOPANDGO, None),
           ('Maze',                      MAZESIZE, None),
+          ('Display Results',				 DISPLAYRESULTS, None),
           ('Exit',                      EXIT, None)])
-
    menu.set_center(True, True)
    menu.set_alignment('center', 'center')
    
+   #Menu displayed for pairing balance board to computer
    connectMenu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
 						[('', 0, None)])           
    connectMenu.set_center(True, True)
    connectMenu.set_alignment('bottom','center')
-   		
+   
+   #Menu displayed for loading existing profiles		
    loadprof_menu = cMenu(100, 50, 20, 5, 'vertical', 100, screen, profiles)          
    loadprof_menu.set_center(True, True)
    loadprof_menu.set_alignment('center', 'center')
    
-   #user_profile = open("profiles/Jay_Oatts.csv", 'w')
-   
-   #user_profile.write('Username,Height(in),Weight(lbs),BMI')
-   
+   #Menu for choosing size of maze
    mazeSizeMenu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
               [('Small',               SMALL, None),
 	            ('Medium',              MEDIUM, None),
@@ -116,14 +120,14 @@ def main():
    mazeSizeMenu.set_center(True, True)
    mazeSizeMenu.set_alignment('center','center')
    
-   
+   #Menu for choosing difficulty of maze
    mazeDiffMenu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
               [('Easy',               EASY, None),
-	             ('Hard',              HARD, None)])
+	            ('Hard',               HARD, None)])
    mazeDiffMenu.set_center(True, True)
    mazeDiffMenu.set_alignment('center','center')
    
-   
+   #Black display and flip screen
    screen.fill(BLACK)
    pygame.display.flip()
    
@@ -133,14 +137,14 @@ def main():
    state = 0
    prev_state = 1
    
-   mazeSize=-1
-   mazeDiff=-1
+   #Initialize maze size and difficulty
+   mazeSize = -1
+   mazeDiff = -1
    
-   #Profile stats
-   #profile_name = ""
-   #profile_feet = "__ft"
-   #profile_inches = "__in"
+   #Initialize empty profile information and measurement results
    profile_info = ["", "__ft__in", 0]
+   meas_results = [0, 0, 0, 0, 0, 0, 0]
+   user_profile = None
    
    # rect_list is the list of pygame.Rect's that will tell pygame where to
    # update the screen (there is no point in updating the entire screen if only
@@ -154,10 +158,11 @@ def main():
    # in one of the menu when that button is selected)
    random.seed()
 
+	#Initialize state booleans
    wii_status = False
    load_status = False
    profile_loaded = False
-   meas_results = [0, 0, 0]
+   
    # The main while loop
    while 1:
       # Check if the state has changed, if it has, then post a user event to
@@ -169,12 +174,12 @@ def main():
 			screen.fill(BLACK)
 			desc_font = pygame.font.Font(None, 24)    # Font to use
 			if wii_status!=False:
-				screen.blit(desc_font.render("Wiiboard is connected!", True, WHITE), (300, 570))
+				screen.blit(desc_font.render("Wii Balance Board is connected!", True, WHITE), (300, 570))
 			else:
-				screen.blit(desc_font.render("Wiiboard is not connected", True, WHITE), (300, 570))
+				screen.blit(desc_font.render("Wii Balance Board is not connected", True, WHITE), (300, 570))
 
-		screen.blit(desc_font.render("User: " + profile_info[0], True, WHITE), (0, 0))
-		screen.blit(desc_font.render("Height: " + profile_info[1] , True, WHITE), (600, 0))
+		screen.blit(desc_font.render("User: "   + profile_info[0], True, WHITE), (0, 0))
+		screen.blit(desc_font.render("Height: " + profile_info[1], True, WHITE), (650, 0))
    
 		pygame.display.flip()
 
@@ -184,36 +189,18 @@ def main():
 		if e.type == pygame.KEYDOWN or e.type == EVENT_CHANGE_STATE:
 			if state == MAIN:
 				if (wii_status and profile_loaded):
+					#When profile loaded and balance board connected move to game menu
 					rect_list, state = menu.update(e, state)
 				elif load_status:
+					#If load profile requested, load that menu
 					rect_list, state = loadprof_menu.update(e, state)
 				else:
+					#Otherwise, stay at initial screen
 					rect_list, state = start_menu.update(e, state)
-			elif state == MEASUREMENTS:
-				meas_results = scalesgui.bodymeasure(screen, int(profile_info[2]))
-				state=MAIN
-			elif state == DYNAMICBALANCE:
-				#rect_list, state = menu.update(e, state)
-				scalesgui.dynamic_balance(screen)
-				state=MAIN
 			elif state == CONNECTING:
 				rect_list, state = connectMenu.update(e, state)
 				wii_status = scalesgui.connect_wiiboard(screen)          
-				#thread.start_new_thread( scalesgui.connect_wiiboard, (screen, None ) )
-				state=MAIN
-			elif state == MAZE: 
-				PyMaze.run(mazeSize, mazeDiff)
-				state=MAIN
-				mazeSize=-1
-				mazeDiff=-1
-			elif state == MAZESIZE: 
-				rect_list, mazeSize = mazeSizeMenu.update(e, state)
-				if mazeSize==SMALL or mazeSize==MEDIUM or mazeSize==LARGE:
-					state = MAZEDIFF
-			elif state == MAZEDIFF: 
-				rect_list, mazeDiff = mazeDiffMenu.update(e, state)
-				if mazeDiff==EASY or mazeDiff==HARD:
-					state = MAZE
+				state=MAIN		
 			elif state == CREATEPROFILE:
 				profile_info = create_profile(screen)
 				profile_path = "profiles/" + profile_info[0] + ".csv"
@@ -225,7 +212,7 @@ def main():
 				else:
 					user_profile = open(profile_path, 'a')			
 					user_profile.write('Username,' + profile_info[0] + ',Height,' + profile_info[1] + ',Inches,' + str(profile_info[2]) + '\n')
-					user_profile.write('Weight(lbs),BMI,COB\n')        
+					user_profile.write('Date,Weight(lbs),BMI,Center of Balance,Single Leg Balance,Dynamic Balance,Stop&Go,Maze\n')        
 				profile_loaded = True
 				state=MAIN
 			elif state == LOADPROFILE:
@@ -237,7 +224,8 @@ def main():
 				rect_list, state = menu.update(e, state)
 				load_status = False
 				state=MAIN
-			elif state >= 100:	
+			elif state >= 100:
+				#States greater than 100 are the dynamically allocated profiles to load	
 				user_profile = open("profiles/" + listing[state-100], 'a+')
 				reader = csv.reader(user_profile)
 				for row in reader:
@@ -247,25 +235,88 @@ def main():
 					break
 				load_status = False
 				profile_loaded = True
+				state=MAIN	
+			elif state == MEASUREMENTS:
+				bodymeasure_results = scalesgui.bodymeasure(screen, int(profile_info[2]))
+				meas_results[0] = bodymeasure_results[0]
+				meas_results[1] = bodymeasure_results[1]
+				meas_results[2] = bodymeasure_results[2]
 				state=MAIN
+			elif state == SINGLELEG:
+				singleleg_results = scalesgui.singleleg(screen)
+				meas_results[3] = singleleg_results
+				state=MAIN
+			elif state == DYNAMICBALANCE:
+				dbal_results = scalesgui.dynamic_balance(screen)
+				meas_results[4] = dbal_results
+				state=MAIN
+			elif state == STOPANDGO:
+				state=MAIN	
+			elif state == MAZE: 
+				maze_result = PyMaze.run(mazeSize, mazeDiff)
+				meas_results[6] = maze_result
+				state=MAIN
+				mazeSize=-1
+				mazeDiff=-1
+			elif state == MAZESIZE: 
+				rect_list, mazeSize = mazeSizeMenu.update(e, state)
+				if mazeSize==SMALL or mazeSize==MEDIUM or mazeSize==LARGE:
+					state = MAZEDIFF
+			elif state == MAZEDIFF: 
+				rect_list, mazeDiff = mazeDiffMenu.update(e, state)
+				if mazeDiff==EASY or mazeDiff==HARD:
+					state = MAZE			
 			else:
-				user_profile.write(str(meas_results[0]) +',' + str(meas_results[1]) + ',' + str(meas_results[2]) + '\n')
-				user_profile.close()
+				#Otherwise, exit the program. If a user profile has been loaded, then write current results
+				if (user_profile):
+					now = datetime.datetime.now()
+					user_profile.write(now.strftime("%Y-%m-%d %H:%M")+','
+					+ str(meas_results[0])+',' 
+					+ str(meas_results[1])+','
+					+ str(meas_results[2])+',' 
+					+ str(meas_results[3])+','
+					+ str(meas_results[4])+',' 
+					+ str(meas_results[5])+','   
+					+ str(meas_results[6])+'\n')
+					user_profile.close()
 				pygame.quit()
 				sys.exit()
 
       #print state
       # Quit if the user presses the exit button
 		if e.type == pygame.QUIT:
+			if (user_profile):
+				now = datetime.datetime.now()
+				user_profile.write(now.strftime("%Y-%m-%d %H:%M")+','
+				+ str(meas_results[0])+',' 
+				+ str(meas_results[1])+','
+				+ str(meas_results[2])+',' 
+				+ str(meas_results[3])+','
+				+ str(meas_results[4])+',' 
+				+ str(meas_results[5])+','   
+				+ str(meas_results[6])+'\n')
+				user_profile.close()
 			pygame.quit()
 			sys.exit()
 		if e.type == pygame.KEYDOWN:
 			if e.key == pygame.K_ESCAPE:
+				if (user_profile):
+					now = datetime.datetime.now()
+					user_profile.write(now.strftime("%Y-%m-%d %H:%M")+','
+					+ str(meas_results[0])+',' 
+					+ str(meas_results[1])+','
+					+ str(meas_results[2])+',' 
+					+ str(meas_results[3])+','
+					+ str(meas_results[4])+',' 
+					+ str(meas_results[5])+','   
+					+ str(meas_results[6])+'\n')
+					user_profile.close()
 				pygame.quit()
 				sys.exit()          
 				
-		# Update the screen
+		# Update the screen on every loop
 		pygame.display.update(rect_list)
+	#End game loop
 
 def create_profile(screen):
 		screen.fill(BLACK)

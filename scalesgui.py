@@ -116,7 +116,7 @@ def gsc(readings, pos):
 def connect_wiiboard(screen):
    screen.fill(BLACK)   
    desc_font = pygame.font.Font(None, 24)    # Font to use
-   screen.blit(desc_font.render("Please press the red 'connect' button on the balance board, inside the battery compartment.", True, WHITE), (15, 330)) 
+   screen.blit(desc_font.render("Please press the red 'connect' button on the balance board, inside the battery compartment.", True, WHITE), (35, 330)) 
    pygame.display.flip()
    global wiimote
    #print "Do not step on the balance board."
@@ -133,7 +133,7 @@ def connect_wiiboard(screen):
       return False
       
    screen.fill(BLACK)   
-   screen.blit(desc_font.render("Please press the red 'connect' button on the balance board, inside the battery compartment.", True, WHITE), (15, 330)) 
+   screen.blit(desc_font.render("Please press the red 'connect' button on the balance board, inside the battery compartment.", True, WHITE), (35, 330)) 
    pygame.display.flip()
    return True
       
@@ -195,12 +195,10 @@ def dynamic_balance(screen):
    #screen = pygame.display.set_mode(screen_res, screen_options)
    #pygame.display.set_caption("dynamic balance")
 
-   weight_sprite = WeightSprite()
-   weight_sprite.weight = 40.33
+   #weight_sprite = WeightSprite()
+   
+   #weight_sprite.weight = 40.33
    frame = 0
-   boxes_completed=0
-   box_start=0
-   start_time = time.time()
    
    random.seed()
    
@@ -210,6 +208,24 @@ def dynamic_balance(screen):
    max_x = min_x + x_size
    min_y = random.randrange(0, screen_res[1]-y_size, 1)
    max_y = min_y + y_size 
+   
+   enter_pressed = False
+   
+   while (not enter_pressed):
+   	for event in pygame.event.get():
+   		if event.type == KEYDOWN:
+   			if event.key == pygame.K_RETURN:
+   				enter_pressed = True;
+   	screen.blit(sys_font_weight.render("Press Enter to begin test...", True, WHITE), (150, 300))
+   	screen.blit(sys_font_weight.render("Shift weight to move red dot", True, WHITE), (0, 400))
+   	screen.blit(sys_font_weight.render("inside blue box for 3 seconds", True, WHITE), (0, 450))
+   	pygame.display.flip()
+   	pygame.time.wait(refresh_delay)
+   
+   boxes_completed=0
+   box_start=0
+   start_time = time.time()
+   
    while True:
       for event in pygame.event.get():
          if event.type == KEYDOWN:
@@ -271,7 +287,9 @@ def dynamic_balance(screen):
          
          
       if cur_time - start_time > 30:
-         return         
+      	scores = [0, 25, 75, 150, 250, 375, 525, 700, 1000]
+      	print "Boxes = " + str(boxes_completed) + "Score = " + str(scores[boxes_completed])  
+      	return scores[boxes_completed]
          
       pygame.draw.circle(screen, (255,0,0), (int(xpos), int(ypos)), 5)
       
@@ -492,6 +510,7 @@ def bodymeasure(screen, height):
    			if event.key == pygame.K_RETURN:
    				enter_pressed = True;
    	screen.blit(sys_font_weight.render("Press Enter to begin measuring...", True, WHITE), (100, 300))
+   	screen.blit(sys_font_weight.render("Try to keep red dot at the center", True, WHITE), (100, 400))
    	pygame.display.flip()
    	pygame.time.wait(refresh_delay)
    
@@ -610,6 +629,222 @@ def bodymeasure(screen, height):
    pygame.display.flip()
    pygame.time.wait(refresh_delay)
    results = [avg_weight, avg_bmi, cob_score]
+   while True:
+   	for event in pygame.event.get():
+   		if event.type == KEYDOWN:
+   			if event.key == pygame.K_RETURN:
+   				return results
+   				
+def singleleg(screen):
+   global wiimote, named_calibration
+   if wiimote == None:
+      return
+   wiimote.rpt_mode = cwiid.RPT_BALANCE | cwiid.RPT_BTN
+   wiimote.request_status()
+
+   '''
+   if wiimote.state['ext_type'] != cwiid.EXT_BALANCE:
+	   print 'This program only supports the Wii Balance Board'
+	   wiimote.close()
+	   sys.exit(1)
+   '''
+   balance_calibration = wiimote.get_balance_cal()
+   named_calibration = { 'right_top': balance_calibration[0],
+					     'right_bottom': balance_calibration[1],
+					     'left_top': balance_calibration[2],
+					     'left_bottom': balance_calibration[3],
+					   }
+
+   system_file = "system.ini"
+
+   if not os.path.lexists(system_file):
+	   print "Problem: System configuration file (system.ini) doesn't exist."
+	   sys.exit(1)
+
+   sconf = ConfigParser()
+   sconf.read(system_file)
+
+
+   xdisplay = sconf.get("display", "xdisplay")
+   if len(xdisplay) > 1:
+	   # using alternate display.
+	   print "Attempting to use device", xdisplay, "instead of the default."
+	   os.putenv("DISPLAY", xdisplay)
+
+   #pygame.init()
+   global sys_font_weight, sys_font_weight_fgcolour, screen_res
+   sys_font_weight = pygame.font.SysFont(sconf.get("font_weight", "face"), int(sconf.get("font_weight", "size")))
+
+   sys_font_weight.set_italic(False)
+   sys_font_weight.set_underline(False)
+
+   bgcolour = (0, 0, 0)
+   sys_font_weight_fgcolour = (255, 255, 255)
+   screen_res = (int(sconf.get("display", "width")), int(sconf.get("display", "height")))
+   refresh_delay = int(sconf.get("display", "refresh_delay"))
+
+   screen_options = 0
+   if int(sconf.get("display", "fullscreen")) >= 1 and len(xdisplay) <= 1:
+	   screen_options = screen_options | pygame.FULLSCREEN
+
+   if int(sconf.get("display", "double_buffers")) >= 1:
+	   screen_options = screen_options | pygame.DOUBLEBUF
+
+   if int(sconf.get("display", "hardware_surface")) >= 1:
+	   screen_options = screen_options | pygame.HWSURFACE
+
+   if int(sconf.get("display", "opengl")) >= 1:
+	   screen_options = screen_options | pygame.OPENGL
+   
+   #screen = pygame.display.set_mode(screen_res, screen_options)
+   pygame.display.set_caption("Single Leg Balance Test")
+   
+   #frame = 0
+   
+   screen.fill(bgcolour)
+   enter_pressed = False
+   
+   while (not enter_pressed):
+   	for event in pygame.event.get():
+   		if event.type == KEYDOWN:
+   			if event.key == pygame.K_RETURN:
+   				enter_pressed = True;
+   	screen.blit(sys_font_weight.render("Press Enter to begin measuring...", True, WHITE), (100, 300))
+   	screen.blit(sys_font_weight.render("Try to keep red dot on the line", True, WHITE), (100, 400))
+   	pygame.display.flip()
+   	pygame.time.wait(refresh_delay)
+   
+   start_time = time.time()
+   cur_time = time.time()
+   
+   right_count = 0
+   left_count = 0
+   #total_x_left = 0
+   total_y_left = 0
+   #total_x_right = 0
+   total_y_right = 0
+   right_resets = 0
+   left_resets = 0
+   #total_weight = 0
+   #total_bmi = 0	
+   fell = False		
+
+   while ((cur_time - start_time) < 30):
+	   for event in pygame.event.get():
+		   if event.type == KEYDOWN:
+			   return
+				
+	   wiimote.request_status()
+	   #frame = frame + 1
+	   '''if frame == 50:
+		   frame = 0
+		   weight = ((calcweight(wiimote.state['balance'], named_calibration) / 100.0) * 2.20462262) #Weight in lbs
+		   #print "%.2fkg" % weight
+		   weight_sprite.weight = weight
+		   BMI_sprite.bmi = ((weight) / ((height)**2)) * 703'''
+	
+	   readings = wiimote.state['balance']
+	
+	   try:
+		   x_balance = (float(gsc(readings,'right_top')+gsc(readings,'right_bottom'))) / (float(gsc(readings,'left_top')+gsc(readings,'left_bottom')))
+		   if x_balance > 1:
+			   x_balance = (((float(gsc(readings,'left_top')+gsc(readings,'left_bottom'))) / (float(gsc(readings,'right_top')+gsc(readings,'right_bottom'))))*-1.)+1.
+		   else:
+			   x_balance = x_balance -1.
+		   y_balance = (float(gsc(readings,'left_bottom')+gsc(readings,'right_bottom'))) / (float(gsc(readings,'left_top')+gsc(readings,'right_top')))
+		   if y_balance > 1:
+			   y_balance = (((float(gsc(readings,'left_top')+gsc(readings,'right_top'))) / (float(gsc(readings,'left_bottom')+gsc(readings,'right_bottom'))))*-1.)+1.
+		   else:
+			   y_balance = y_balance -1.
+	   except:
+		   x_balance = 1.
+		   y_balance = 1.
+	
+	   #print "readings:",readings
+
+	   screen.fill(bgcolour) # blank the screen.
+	   
+	   if ((cur_time - start_time) < 5):
+	   	screen.blit(sys_font_weight.render("Prepare for measurement, stand on left leg...", True, WHITE), (0, 0))
+	   elif ((cur_time - start_time) < 15):
+	   	screen.blit(sys_font_weight.render("Measuring left leg balance, stand still...", True, WHITE), (0, 0))
+	   elif ((cur_time - start_time) < 20):
+	   	screen.blit(sys_font_weight.render("Prepare for measurement, stand on right leg...", True, WHITE), (0, 0))
+	   elif ((cur_time - start_time) < 30):
+	   	screen.blit(sys_font_weight.render("Measuring right leg balance, stand still...", True, WHITE), (0, 0))
+	
+	   # line up the lines
+	   #pygame.draw.line(screen, (0,0,255), (screen_res[0]/2,0), (screen_res[0]/2,screen_res[1]), 2)
+	   pygame.draw.line(screen, (0,0,255), (0,screen_res[1]/2), (screen_res[0],screen_res[1]/2), 2)
+	
+	   #weight_sprite.update()
+	
+	   #screen.blit(weight_sprite.image, weight_sprite.rect)
+	   
+	   #weight_sprite.update()
+	   #BMI_sprite.update()
+	
+	   #screen.blit(weight_sprite.image, weight_sprite.rect)
+	   #screen.blit(BMI_sprite.image, BMI_sprite.rect)
+
+	   xpos = (x_balance * (screen_res[0]/2)) + (screen_res[0]/2)
+	   ypos = (y_balance * (screen_res[1]/2)) + (screen_res[1]/2)
+	   
+	   if ((cur_time - start_time) > 20):
+	   	#total_x_right += xpos
+	   	total_y_right += ypos
+	   	right_count += 1
+	   	if (xpos < (6*screen_res[0]/10) and (fell == False)):
+	   		right_resets += 1
+	   		fell = True
+	   		print "Left leg touched!"
+	   	elif (xpos > (6*screen_res[0]/10) and (fell == True)):
+	   		fell = False
+	   		print "Fall reset"
+	   			
+	   elif ((cur_time - start_time) > 5 and (cur_time - start_time) < 15):
+	   	#total_x_left += xpos
+	   	total_y_left += ypos
+	   	left_count += 1
+	   	if (xpos > (4*screen_res[0]/10) and (fell == False)):
+	   		left_resets += 1
+	   		fell = True
+	   		print "Right leg touched!"
+	   	elif (xpos < (4*screen_res[0]/10) and (fell == True)):
+	   		fell = False
+	   		print "Fall reset"
+		
+	   #print "balance:", x_balance, y_balance
+	   #print "position:", xpos,ypos
+	   pygame.draw.circle(screen, (255,0,0), (int(xpos), int(ypos)), 5)
+	   pygame.display.flip()
+	   pygame.time.wait(refresh_delay)
+
+	   cur_time = time.time()	
+   
+   screen.fill(bgcolour) # blank the screen.
+   # line up the lines
+   #pygame.draw.line(screen, (0,0,255), (screen_res[0]/2,0), (screen_res[0]/2,screen_res[1]), 2)
+   pygame.draw.line(screen, (0,0,255), (0,screen_res[1]/2), (screen_res[0],screen_res[1]/2), 2)
+   
+   avg_y_right = total_y_right / right_count
+   avg_y_left = total_y_left / left_count
+   back_right = (avg_y_right / screen_res[1]) * 100 
+   front_right = 100 - back_right
+   back_left = (avg_y_left / screen_res[1]) * 100 
+   front_left = 100 - back_left					
+   singleleg_score = 500 - ((abs(front_right-50) + abs(front_left-50))*10) - ((right_resets + left_resets)*25)
+   print "Score = " + str(singleleg_score)
+   	
+   screen.blit(sys_font_weight.render("Press Enter to return to menu...", True, WHITE), (100, 0))
+   #screen.blit(sys_font_weight.render("Weight: " + "%.2f" % avg_weight + " lbs", True, WHITE), (25, 75))
+   #screen.blit(sys_font_weight.render("BMI: " + "%.2f" % avg_bmi + "   " + bmi_result, True, WHITE), (25, 150))
+   screen.blit(sys_font_weight.render("Right Balance: " + "%.1f" % back_right + "B " + "%.1f" % front_right + "F " + str(right_resets) + " resets" , True, WHITE), (25, 75))
+   screen.blit(sys_font_weight.render("Left Balance: " + "%.1f" % back_left + "B " + "%.1f" % front_left + "F " + str(left_resets) + " resets" , True, WHITE), (25, 150))
+
+   pygame.display.flip()
+   pygame.time.wait(refresh_delay)
+   results = singleleg_score
    while True:
    	for event in pygame.event.get():
    		if event.type == KEYDOWN:
