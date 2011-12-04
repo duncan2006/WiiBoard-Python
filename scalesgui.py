@@ -291,6 +291,139 @@ def dynamic_balance(screen):
       pygame.display.flip()
       pygame.time.wait(refresh_delay)
 
+def stop_go(screen):
+   global wiimote, named_calibration
+   if wiimote == None:
+      return
+   wiimote.rpt_mode = cwiid.RPT_BALANCE | cwiid.RPT_BTN
+   wiimote.request_status()
+   balance_calibration = wiimote.get_balance_cal()
+   named_calibration = { 'right_top': balance_calibration[0],
+                    'right_bottom': balance_calibration[1],
+                    'left_top': balance_calibration[2],
+                    'left_bottom': balance_calibration[3],
+                  }
+
+   system_file = "system.ini"
+
+   if not os.path.lexists(system_file):
+      print "Problem: System configuration file (system.ini) doesn't exist."
+      sys.exit(1)
+
+   sconf = ConfigParser()
+   sconf.read(system_file)
+
+
+   xdisplay = sconf.get("display", "xdisplay")
+   if len(xdisplay) > 1:
+      # using alternate display.
+      print "Attempting to use device", xdisplay, "instead of the default."
+      os.putenv("DISPLAY", xdisplay)
+
+   #pygame.init()
+   global sys_font_weight, sys_font_weight_fgcolour, screen_res
+   sys_font_weight = pygame.font.SysFont(sconf.get("font_weight", "face"), int(sconf.get("font_weight", "size")))
+
+   sys_font_weight.set_italic(False)
+   sys_font_weight.set_underline(False)
+
+   bgcolour = (0, 0, 0)
+   sys_font_weight_fgcolour = (255, 255, 255)
+   screen_res = (int(sconf.get("display", "width")), int(sconf.get("display", "height")))
+   refresh_delay = int(sconf.get("display", "refresh_delay"))
+
+   screen_options = 0
+   if int(sconf.get("display", "fullscreen")) >= 1 and len(xdisplay) <= 1:
+      screen_options = screen_options | pygame.FULLSCREEN
+
+   if int(sconf.get("display", "double_buffers")) >= 1:
+      screen_options = screen_options | pygame.DOUBLEBUF
+
+   if int(sconf.get("display", "hardware_surface")) >= 1:
+      screen_options = screen_options | pygame.HWSURFACE
+
+   if int(sconf.get("display", "opengl")) >= 1:
+      screen_options = screen_options | pygame.OPENGL
+   
+   #screen = pygame.display.set_mode(screen_res, screen_options)
+   #pygame.display.set_caption("dynamic balance")
+
+   weight_sprite = WeightSprite()
+   weight_sprite.weight = 40.33
+   frame = 0
+   start_time = time.time()
+   cur_time = start_time
+   random.seed()
+   go = random.randrange(3, 7, 1)
+   stop = random.randrange(2, 5, 1)
+   
+   go_end_time = go + cur_time
+   stop_end_time = stop + go + cur_time
+   while True:
+      for event in pygame.event.get():
+         if event.type == KEYDOWN:
+            return     
+      
+      wiimote.request_status()
+      frame = frame + 1
+   
+      readings = wiimote.state['balance']
+      
+      try:
+         x_balance = (float(gsc(readings,'right_top')+gsc(readings,'right_bottom'))) / (float(gsc(readings,'left_top')+gsc(readings,'left_bottom')))
+         if x_balance > 1:
+            x_balance = (((float(gsc(readings,'left_top')+gsc(readings,'left_bottom'))) / (float(gsc(readings,'right_top')+gsc(readings,'right_bottom'))))*-1.)+1.
+         else:
+            x_balance = x_balance -1.
+         y_balance = (float(gsc(readings,'left_bottom')+gsc(readings,'right_bottom'))) / (float(gsc(readings,'left_top')+gsc(readings,'right_top')))
+         if y_balance > 1:
+            y_balance = (((float(gsc(readings,'left_top')+gsc(readings,'right_top'))) / (float(gsc(readings,'left_bottom')+gsc(readings,'right_bottom'))))*-1.)+1.
+         else:
+            y_balance = y_balance -1.
+      except:
+         x_balance = 1.
+         y_balance = 1.
+   
+
+      screen.fill(bgcolour) # blank the screen.
+   
+      xpos = (x_balance * (screen_res[0]/2)) + (screen_res[0]/2)
+      ypos = (y_balance * (screen_res[1]/2)) + (screen_res[1]/2)
+      
+      
+      cur_time = time.time()
+      
+      #draw the box to stay in
+      if cur_time < go_end_time:
+         if xpos < (screen_res[0]/2)-100:
+            pygame.draw.rect(screen, (0,0,255), (screen_res[0]/2, 0, screen_res[0]/2, screen_res[1]), 0)
+         elif xpos > (screen_res[0]/2)+100:           
+            pygame.draw.rect(screen, (0,0,255), (0, 0, screen_res[0]/2, screen_res[1]), 0)
+                  
+         
+      if cur_time - start_time > 30:
+         return         
+         
+      time_left = 30 - (cur_time-start_time)
+      time_disp = "%.2f" % time_left      
+      font = pygame.font.Font(None, 24)
+      screen.blit(font.render(time_disp, True, WHITE), (15, 30)) 
+      
+      if (cur_time < go_end_time):
+         pygame.draw.circle(screen, (0,255,0), (screen_res[0]/2, 25), 20)
+      else:
+         pygame.draw.circle(screen, (255,0,0), (screen_res[0]/2, 25), 20)
+      
+      pygame.display.flip()
+      pygame.time.wait(refresh_delay)
+      
+      if cur_time > stop_end_time:
+         go = random.randrange(3, 7, 1)
+         stop = random.randrange(2, 5, 1)
+         go_end_time = cur_time + go
+         stop_end_time = cur_time + go + stop
+
+
 def scalegui(screen):
    print "Please press the red 'connect' button on the balance board, inside the battery compartment."
    print "Do not step on the balance board."

@@ -42,6 +42,7 @@ CREATEPROFILE   	= 6
 LOADPROFILE			= 7
 BACK					= 8
 DYNAMICBALANCE    = 16
+STOPANDGO         = 17
 
 #Maze variables
 MAZESIZE        = 9
@@ -90,6 +91,7 @@ def main():
    menu = cMenu(100, 50, 20, 5, 'vertical', 100, screen,
          [('Daily Measurements',        MEASUREMENTS, None),
           ('Balance',                   DYNAMICBALANCE, None),
+          ('Stop and Go',                   STOPANDGO, None),
           ('Maze',                      MAZESIZE, None),
           ('Exit',                      EXIT, None)])
 
@@ -193,8 +195,10 @@ def main():
 				meas_results = scalesgui.bodymeasure(screen, int(profile_info[2]))
 				state=MAIN
 			elif state == DYNAMICBALANCE:
-				#rect_list, state = menu.update(e, state)
 				scalesgui.dynamic_balance(screen)
+				state=MAIN
+			elif state == STOPANDGO:
+				scalesgui.stop_go(screen)
 				state=MAIN
 			elif state == CONNECTING:
 				rect_list, state = connectMenu.update(e, state)
