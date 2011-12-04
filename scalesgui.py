@@ -359,6 +359,9 @@ def stop_go(screen):
    
    go_end_time = go + cur_time
    stop_end_time = stop + go + cur_time
+   total_go_time = 0
+   go_start_time = cur_time
+   stop_transition = 0 
    while True:
       for event in pygame.event.get():
          if event.type == KEYDOWN:
@@ -395,19 +398,45 @@ def stop_go(screen):
       
       #draw the box to stay in
       if cur_time < go_end_time:
+         stop_transition = 0
+         cur_go_time = cur_time - go_start_time + total_go_time
          if xpos < (screen_res[0]/2)-100:
             pygame.draw.rect(screen, (0,0,255), (screen_res[0]/2, 0, screen_res[0]/2, screen_res[1]), 0)
          elif xpos > (screen_res[0]/2)+100:           
             pygame.draw.rect(screen, (0,0,255), (0, 0, screen_res[0]/2, screen_res[1]), 0)
+         go_disp = "%.2f" % cur_go_time
+         font = pygame.font.Font(None, 24)
+         screen.blit(font.render(go_disp, True, WHITE), (200, 30))
+      else:
+         if not stop_transition:
+            total_go_time += go
+         stop_transition = 1
+         go_disp = "%.2f" % total_go_time
+         font = pygame.font.Font(None, 24)
+         screen.blit(font.render(go_disp, True, WHITE), (200, 30))
                   
          
-      if cur_time - start_time > 30:
-         return         
-         
-      time_left = 30 - (cur_time-start_time)
+      if cur_time < go_end_time:
+         if (cur_time - go_start_time) + total_go_time > 30:
+            return
+         '''
+         if cur_time < go_end_time:
+            total_go_time += cur_time - go_start_time
+         else:
+            total_go_time += go
+         '''
+      else:
+         if total_go_time >= 30:
+            return         
+      time_left = 0
+      if cur_time < go_end_time:    
+         time_left = 30 - (cur_time - go_start_time + total_go_time)
+      else:
+         time_left = 30 - (total_go_time)
       time_disp = "%.2f" % time_left      
       font = pygame.font.Font(None, 24)
-      screen.blit(font.render(time_disp, True, WHITE), (15, 30)) 
+      screen.blit(font.render(time_disp, True, WHITE), (15, 30))       
+      
       
       if (cur_time < go_end_time):
          pygame.draw.circle(screen, (0,255,0), (screen_res[0]/2, 25), 20)
@@ -417,11 +446,13 @@ def stop_go(screen):
       pygame.display.flip()
       pygame.time.wait(refresh_delay)
       
-      if cur_time > stop_end_time:
+      if cur_time > stop_end_time:         
          go = random.randrange(3, 7, 1)
          stop = random.randrange(2, 5, 1)
+         go_start_time = cur_time
          go_end_time = cur_time + go
          stop_end_time = cur_time + go + stop
+         stop_transition = 0
 
 
 def scalegui(screen):
