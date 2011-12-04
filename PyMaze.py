@@ -6,12 +6,14 @@ from maze import Maze
 import scalesgui
 import math
 import wiimenu
+import time
+
 class Game:
 
   def __init__(self, diff, dim, path):
     self.size = (800,600)
     self.screen = pygame.display.set_mode(self.size)
-    pygame.display.set_caption('Maze Demo')
+    pygame.display.set_caption('Maze Test')
 
     font = pygame.font.SysFont(pygame.font.get_default_font(), 55)
     text = font.render("Loading...", 1, (255,255,255))
@@ -143,7 +145,7 @@ class Game:
       y_pos = -1.*y_pos
       if weight > 10 and math.sqrt((x_pos*x_pos)+(y_pos*y_pos)) > .3:         
          direction, angle, quad, angle1 = scalesgui.get_direction(x_pos, y_pos)
-         print x_pos, y_pos, direction, angle, angle1, quad
+         #print x_pos, y_pos, direction, angle, angle1, quad
          self.move_player(direction)
       self.draw_player()
       pygame.display.update()
@@ -191,8 +193,8 @@ class Game:
 
     # Check for victory.
     if self.cx + 1 == self.maze_obj.cols and self.cy + 1 == self.maze_obj.rows:
-      print 'Congratumalations, you beat this maze.'
-      self.keep_going = 0
+    	print 'Congratulations, you beat this maze.'
+    	self.keep_going = 0
 
   def draw_player(self):
     for y in xrange(self.maze_obj.rows):
@@ -208,8 +210,8 @@ class Game:
         self.cy*self.cell_height+2))
         
 def run(mazeSize, mazeDiff):
-  diff=0
-  dim = '15x20'
+  diff = 0
+  dim  = '15x20'
   if mazeDiff == wiimenu.EASY:
      diff = 0
   elif mazeDiff == wiimenu.HARD:
@@ -221,11 +223,29 @@ def run(mazeSize, mazeDiff):
      dim = '15x20'
   elif mazeSize==wiimenu.LARGE:
      dim = '30x40'
-    
+    	
   path = 1
 
   g = Game(diff, dim, path)
-  g.start() 
+  start_time = time.time()
+  g.start()
+  total_time = time.time() - start_time
+  score = 0 - total_time
+  print "First score " + str(score)
+  if mazeDiff == wiimenu.EASY:
+  		score = score * 1.1
+  elif mazeDiff == wiimenu.HARD:
+		score = score * 0.75
+  print "Diff multiplier " + str(score)
+
+  if mazeSize==wiimenu.SMALL:
+		score += 250
+  elif mazeSize==wiimenu.MEDIUM:
+		score += 400
+  elif mazeSize==wiimenu.LARGE:
+		score += 600
+  print 'Time = ' + str(total_time) + 'Score = ' + str(score)
+  return score  
 
 if __name__ == '__main__':
   pygame.init()
