@@ -1,0 +1,32 @@
+reset
+set key left
+set size 0.25,0.25
+set multiplot
+set xdata time
+set timefmt "%Y-%m-%d %H:%M"
+set title "Your Weight Tracker"
+set xlabel "Date"
+set ylabel "Weight (lbs)"
+set y2label "BMI"
+set y2tics nomirror
+set xtics 86400
+set autoscale
+set origin 0.1, 0.5
+set datafile separator ","
+cd "profiles"
+plot "Jay Oatts.csv" using 1:2 axis x1y1 title "Weight (lbs)" with linespoints, "Jay Oatts.csv" using 1:3 axis x1y2 title "BMI" with linespoints
+set origin 0.25,0.5
+set xdata time
+set timefmt "%Y-%m-%d %H:%M"
+set title "Your Test Results"
+set xlabel "Date"
+set ylabel "Points"
+set xtics 86400
+set autoscale
+set datafile separator ","
+plot "Jay Oatts.csv" using 1:4 title "Center of Balance" with linespoints, \
+     "Jay Oatts.csv" using 1:5 title "Single Leg Balance" with linespoints,\
+     "Jay Oatts.csv" using 1:6 title "Dynamic Balance" with linespoints,\
+     "Jay Oatts.csv" using 1:7 title "Stop and Go" with linespoints,\
+     "Jay Oatts.csv" using 1:8 title "Maze" with linespoints
+pause -1

@@ -88,18 +88,18 @@ def calcweight( readings, calibrations ):
    """
    weight = 0
    for sensor in ('right_top', 'right_bottom', 'left_top', 'left_bottom'):
-      reading = readings[sensor]
-      calibration = calibrations[sensor]
-      #if reading < calibration[0]:
-      #   print "Warning, %s reading below lower calibration value" % sensor
-      if reading > calibration[2]:
-         print "Warning, %s reading above upper calibration value" % sensor
-      # 1700 appears to be the step the calibrations are against.
-      # 17kg per sensor is 68kg, 1/2 of the advertised Japanese weight limit.
-      if reading < calibration[1]:
-         weight += 1700 * (reading - calibration[0]) / (calibration[1] - calibration[0])
-      else:
-         weight += 1700 * (reading - calibration[1]) / (calibration[2] - calibration[1]) + 1700
+   	reading = readings[sensor]
+   	calibration = calibrations[sensor]
+		#if reading < calibration[0]:
+		#   print "Warning, %s reading below lower calibration value" % sensor
+	  	#if reading > calibration[2]:
+		   #print "Warning, %s reading above upper calibration value" % sensor
+		# 1700 appears to be the step the calibrations are against.
+		# 17kg per sensor is 68kg, 1/2 of the advertised Japanese weight limit.
+   	if reading < calibration[1]:
+   		weight += 1700 * (reading - calibration[0]) / (calibration[1] - calibration[0])
+   	else:
+   		weight += 1700 * (reading - calibration[1]) / (calibration[2] - calibration[1]) + 1700
 
    return weight
    
@@ -128,7 +128,7 @@ def connect_wiiboard(screen):
       screen.fill(BLACK)   
       screen.blit(desc_font.render("Failed to connect, please try again.", True, WHITE), (250, 330)) 
       pygame.display.flip()
-      print 'exception'
+      print 'Exception: Failed to connect balance board'
       time.sleep(1.5)
       return False
       
@@ -170,6 +170,8 @@ def dynamic_balance(screen):
    #pygame.init()
    global sys_font_weight, sys_font_weight_fgcolour, screen_res
    sys_font_weight = pygame.font.SysFont(sconf.get("font_weight", "face"), int(sconf.get("font_weight", "size")))
+   
+   pygame.display.set_caption("Dynamic Balance Test")
 
    sys_font_weight.set_italic(False)
    sys_font_weight.set_underline(False)
@@ -217,9 +219,9 @@ def dynamic_balance(screen):
    		if event.type == KEYDOWN:
    			if event.key == pygame.K_RETURN:
    				enter_pressed = True;
-   	screen.blit(sys_font_weight.render("Press Enter to begin test...", True, WHITE), (150, 200))
-   	screen.blit(sys_font_weight.render("Shift weight to move red dot", True, WHITE), (0, 250))
-   	screen.blit(sys_font_weight.render("inside blue box for 3 seconds", True, WHITE), (0, 300))
+   	screen.blit(sys_font_weight.render("Press Enter to begin test...", True, WHITE), (200, 200))
+   	screen.blit(sys_font_weight.render("Shift weight to move the red dot inside of", True, WHITE), (125, 250))
+   	screen.blit(sys_font_weight.render("the blue box for 3 consecutive seconds", True, WHITE), (125, 300))
    	pygame.display.flip()
    	pygame.time.wait(refresh_delay)
    
@@ -288,8 +290,9 @@ def dynamic_balance(screen):
          
          
       if cur_time - start_time > 30:
-      	scores = [0, 25, 75, 150, 250, 375, 525, 700, 1000]
-      	print "Boxes = " + str(boxes_completed) + "Score = " + str(scores[boxes_completed])  
+      	scores = [0, 50, 125, 225, 350, 500, 675, 875, 1100, 1350, 1625]
+      	print "Dynamic Balance Results:"
+      	print "Boxes = " + str(boxes_completed) + " Score = " + str(scores[boxes_completed])  
       	return scores[boxes_completed]
          
       pygame.draw.circle(screen, (255,0,0), (int(xpos), int(ypos)), 5)
@@ -345,6 +348,8 @@ def stop_go(screen):
 
    sys_font_weight.set_italic(False)
    sys_font_weight.set_underline(False)
+   
+   pygame.display.set_caption("Stop & Go Test")
 
    bgcolour = (0, 0, 0)
    sys_font_weight_fgcolour = (255, 255, 255)
@@ -376,8 +381,8 @@ def stop_go(screen):
    			if event.key == pygame.K_RETURN:
    				enter_pressed = True;
    	screen.blit(sys_font_weight.render("Press Enter to begin test...", True, WHITE), (200, 200))
-   	screen.blit(sys_font_weight.render("Walk in place on the balance board while", True, WHITE), (150, 250))
-   	screen.blit(sys_font_weight.render("the light is green, stand still when red", True, WHITE), (150, 300))
+   	screen.blit(sys_font_weight.render("Walk in place on the balance board while", True, WHITE), (125, 250))
+   	screen.blit(sys_font_weight.render("the light is green, stand still when red", True, WHITE), (125, 300))
    	pygame.display.flip()
    	pygame.time.wait(refresh_delay)
 
@@ -390,11 +395,14 @@ def stop_go(screen):
    
    go_end_time = go + cur_time
    stop_end_time = stop + go + cur_time
-   stop_total_time = 0
    left = True
    right = False
    steps = 0
-   
+   penalties = 0
+   total_go_time = 0
+   go_start_time = cur_time
+   stop_transition = 0 
+
    while True:
       for event in pygame.event.get():
          if event.type == KEYDOWN:
@@ -431,6 +439,8 @@ def stop_go(screen):
       
       #draw the box to stay in
       if cur_time < go_end_time:
+         stop_transition = 0
+         cur_go_time = cur_time - go_start_time + total_go_time
          if xpos < (screen_res[0]/2)-150:
          	if right:
          		right = False
@@ -443,33 +453,67 @@ def stop_go(screen):
          		left = False
          		steps += 1                 
       		pygame.draw.rect(screen, (0,0,255), (screen_res[0]/2, 0, screen_res[0]/2, screen_res[1]), 0)        
-         
-      
-      if (cur_time < go_end_time):
-         pygame.draw.circle(screen, (0,255,0), (screen_res[0]/2, 25), 20)
+         #go_disp = "%.2f" % cur_go_time
+         #font = pygame.font.Font(None, 24)
+         #screen.blit(font.render(go_disp, True, WHITE), (200, 30))
       else:
-      	#Stopped
-      	stop_total_time += (cur_time - go_end_time)    	
-      	pygame.draw.circle(screen, (255,0,0), (screen_res[0]/2, 25), 20)
+			if xpos < (screen_res[0]/2)-150:
+				if right:
+					right = False
+					left = True
+					penalties += 1
+			elif xpos > (screen_res[0]/2)+150:
+				if left:
+					right = True
+					left = False
+					penalties += 1                 
+			if not stop_transition:
+				total_go_time += go
+			stop_transition = 1
+			#go_disp = "%.2f" % total_go_time
+         #font = pygame.font.Font(None, 24)
+         #screen.blit(font.render(go_disp, True, WHITE), (200, 30))
+                  
          
-      time_left = 30 - (cur_time-start_time-stop_total_time)
+      if cur_time < go_end_time:
+         if (cur_time - go_start_time) + total_go_time > 30:
+				score = (steps * 5) - (penalties * 20)
+				print "Stop & Go Results:"
+				print "Steps = %d " %steps + " Penalties = %d " %penalties + " Score = %d" %score
+				return score
+      else:
+         if total_go_time >= 30:
+				score = (steps * 5) - (penalties * 20)
+				print "Stop & Go Results:"
+				print "Steps = %d " %steps + " Penalties = %d " %penalties + " Score = %d" %score
+				return score
+                     
+      time_left = 0
+      if cur_time < go_end_time:    
+         time_left = 30 - (cur_time - go_start_time + total_go_time)
+      else:
+         time_left = 30 - (total_go_time)
       time_disp = "%.2f" % time_left      
       font = pygame.font.Font(None, 24)
       screen.blit(font.render(time_disp, True, WHITE), (15, 30))
-      screen.blit(font.render(str(steps) + " steps", True, WHITE), (300, 30)) 
+      screen.blit(font.render(str(steps) + " steps", True, WHITE), (550, 30))
+      screen.blit(font.render(str(penalties) + " penalties", True, WHITE), (650, 30))       
       
-               
-      if time_left <= 0:
-         return   
+      if (cur_time < go_end_time):
+         pygame.draw.circle(screen, (0,255,0), (screen_res[0]/2, 25), 20)
+      else:  	
+      	pygame.draw.circle(screen, (255,0,0), (screen_res[0]/2, 25), 20)    
       
       pygame.display.flip()
       pygame.time.wait(refresh_delay)
       
-      if cur_time > stop_end_time:
+      if cur_time > stop_end_time:         
          go = random.randrange(3, 7, 1)
          stop = random.randrange(2, 5, 1)
+         go_start_time = cur_time
          go_end_time = cur_time + go
          stop_end_time = cur_time + go + stop
+         stop_transition = 0
 
 
 def scalegui(screen):
@@ -672,8 +716,9 @@ def bodymeasure(screen, height):
    		if event.type == KEYDOWN:
    			if event.key == pygame.K_RETURN:
    				enter_pressed = True;
-   	screen.blit(sys_font_weight.render("Press Enter to begin measuring...", True, WHITE), (100, 300))
-   	screen.blit(sys_font_weight.render("Try to keep red dot at the center", True, WHITE), (100, 400))
+   	screen.blit(sys_font_weight.render("Press Enter to begin measuring...", True, WHITE), (200, 200))
+   	screen.blit(sys_font_weight.render("Stay balanced and try to make the red dot", True, WHITE), (125, 250))
+   	screen.blit(sys_font_weight.render("stay as close as possible to the center", True, WHITE), (125, 300))
    	pygame.display.flip()
    	pygame.time.wait(refresh_delay)
    
@@ -723,9 +768,9 @@ def bodymeasure(screen, height):
 	   screen.fill(bgcolour) # blank the screen.
 	   
 	   if ((cur_time - start_time) < 5):
-	   	screen.blit(sys_font_weight.render("Calibrating, please wait...", True, WHITE), (150, 0))
+	   	screen.blit(sys_font_weight.render("Calibrating, please wait...", True, WHITE), (200, 0))
 	   else:
-	   	screen.blit(sys_font_weight.render("Measuring, stand still...", True, WHITE), (150, 0))
+	   	screen.blit(sys_font_weight.render("Measuring, stand still...", True, WHITE), (200, 0))
 	
 	   # line up the lines
 	   pygame.draw.line(screen, (0,0,255), (screen_res[0]/2,0), (screen_res[0]/2,screen_res[1]), 2)
@@ -792,6 +837,8 @@ def bodymeasure(screen, height):
    pygame.display.flip()
    pygame.time.wait(refresh_delay)
    results = [avg_weight, avg_bmi, cob_score]
+   print "Daily Measurement Results:"
+   print "Weight = %.2f "%avg_weight + "BMI = %.2f "%avg_bmi + "Center of Balance Score = %d"%cob_score
    while True:
    	for event in pygame.event.get():
    		if event.type == KEYDOWN:
@@ -872,8 +919,9 @@ def singleleg(screen):
    		if event.type == KEYDOWN:
    			if event.key == pygame.K_RETURN:
    				enter_pressed = True;
-   	screen.blit(sys_font_weight.render("Press Enter to begin measuring...", True, WHITE), (100, 300))
-   	screen.blit(sys_font_weight.render("Try to keep red dot on the line", True, WHITE), (100, 400))
+   	screen.blit(sys_font_weight.render("Press Enter to begin test...", True, WHITE), (200, 200))
+   	screen.blit(sys_font_weight.render("Stand on one leg as requested and try to", True, WHITE), (125, 250))
+   	screen.blit(sys_font_weight.render("keep the red dot close to the horizontal line", True, WHITE), (125, 300))
    	pygame.display.flip()
    	pygame.time.wait(refresh_delay)
    
@@ -963,7 +1011,7 @@ def singleleg(screen):
 	   		print "Left leg touched!"
 	   	elif (xpos > (6*screen_res[0]/10) and (fell == True)):
 	   		fell = False
-	   		print "Fall reset"
+	   		print "Right leg reset"
 	   			
 	   elif ((cur_time - start_time) > 5 and (cur_time - start_time) < 15):
 	   	#total_x_left += xpos
@@ -975,7 +1023,7 @@ def singleleg(screen):
 	   		print "Right leg touched!"
 	   	elif (xpos < (4*screen_res[0]/10) and (fell == True)):
 	   		fell = False
-	   		print "Fall reset"
+	   		print "Left leg reset"
 		
 	   #print "balance:", x_balance, y_balance
 	   #print "position:", xpos,ypos
@@ -997,6 +1045,7 @@ def singleleg(screen):
    back_left = (avg_y_left / screen_res[1]) * 100 
    front_left = 100 - back_left					
    singleleg_score = 500 - ((abs(front_right-50) + abs(front_left-50))*10) - ((right_resets + left_resets)*25)
+   print "Single Leg Balance Result:"
    print "Score = " + str(singleleg_score)
    	
    screen.blit(sys_font_weight.render("Press Enter to return to menu...", True, WHITE), (100, 0))

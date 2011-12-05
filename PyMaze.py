@@ -193,7 +193,7 @@ class Game:
 
     # Check for victory.
     if self.cx + 1 == self.maze_obj.cols and self.cy + 1 == self.maze_obj.rows:
-    	print 'Congratulations, you beat this maze.'
+    	print 'Congratulations, you beat the maze.'
     	self.keep_going = 0
 
   def draw_player(self):
@@ -231,20 +231,21 @@ def run(mazeSize, mazeDiff):
   g.start()
   total_time = time.time() - start_time
   score = 0 - total_time
-  print "First score " + str(score)
+  #print "First score " + str(score)
   if mazeDiff == wiimenu.EASY:
   		score = score * 1.1
   elif mazeDiff == wiimenu.HARD:
 		score = score * 0.75
-  print "Diff multiplier " + str(score)
+  #print "Diff multiplier " + str(score)
 
   if mazeSize==wiimenu.SMALL:
 		score += 250
   elif mazeSize==wiimenu.MEDIUM:
 		score += 400
   elif mazeSize==wiimenu.LARGE:
-		score += 600
-  print 'Time = ' + str(total_time) + 'Score = ' + str(score)
+		score += 750
+  print "Maze Results:"
+  print 'Time = ' + str(total_time) + ' Score = ' + str(score)
   return score  
 
 if __name__ == '__main__':

@@ -1,3 +1,4 @@
 Username,Duncan Thompson,Height,6ft5in,Inches,77
-Weight(lbs),BMI
-0,0,0
+Date,Weight(lbs),BMI,Center of Balance,Single Leg Balance,Dynamic Balance,Stop&Go,Maze
+2011-12-05 00:26,258.085040776,30.6010766851,489.250631444,443.557332923,350,135,224.652932119
+2011-12-05 00:36,0,0,0,0,0,0,0

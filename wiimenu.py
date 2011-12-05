@@ -31,6 +31,7 @@ import PyMaze
 import os
 import csv
 import datetime
+import subprocess
 
 MAIN            	= 0
 EXIT					= 1
@@ -162,6 +163,7 @@ def main():
    wii_status = False
    load_status = False
    profile_loaded = False
+   results_logged = False
    
    # The main while loop
    while 1:
@@ -172,6 +174,7 @@ def main():
 			pygame.event.post(pygame.event.Event(EVENT_CHANGE_STATE, key = 0))
 			prev_state = state
 			screen.fill(BLACK)
+			pygame.display.set_caption("Wii Balance Board Physiotherapy")
 			desc_font = pygame.font.Font(None, 24)    # Font to use
 			if wii_status!=False:
 				screen.blit(desc_font.render("Wii Balance Board is connected!", True, WHITE), (300, 570))
@@ -251,7 +254,8 @@ def main():
 				meas_results[4] = dbal_results
 				state=MAIN
 			elif state == STOPANDGO:
-				scalesgui.stop_go(screen)
+				stop_go_result = scalesgui.stop_go(screen)
+				meas_results[5] = stop_go_result
 				state=MAIN	
 			elif state == MAZE: 
 				maze_result = PyMaze.run(mazeSize, mazeDiff)
@@ -266,10 +270,11 @@ def main():
 			elif state == MAZEDIFF: 
 				rect_list, mazeDiff = mazeDiffMenu.update(e, state)
 				if mazeDiff==EASY or mazeDiff==HARD:
-					state = MAZE			
-			else:
-				#Otherwise, exit the program. If a user profile has been loaded, then write current results
-				if (user_profile):
+					state = MAZE
+			elif state == DISPLAYRESULTS:
+				if (not results_logged):
+					#Write new results when they haven't been logged
+					results_logged = True
 					now = datetime.datetime.now()
 					user_profile.write(now.strftime("%Y-%m-%d %H:%M")+','
 					+ str(meas_results[0])+',' 
@@ -280,6 +285,54 @@ def main():
 					+ str(meas_results[5])+','   
 					+ str(meas_results[6])+'\n')
 					user_profile.close()
+					
+				prof_name = '"%s.csv"'%profile_info[0]					
+				proc = subprocess.Popen(['gnuplot','-p'], shell=True, stdin=subprocess.PIPE,)
+				proc.stdin.write('reset\n')
+				proc.stdin.write('set term x11 0\n')
+				proc.stdin.write('set xdata time\n')
+				proc.stdin.write('set timefmt "%Y-%m-%d %H:%M"\n')
+				proc.stdin.write('set title "Your Weight Tracker"\n')
+				proc.stdin.write('set xlabel "Date"\n')
+				proc.stdin.write('set ylabel "Weight (lbs)"\n')
+				proc.stdin.write('set y2label "BMI"\n')
+				proc.stdin.write('set y2tics nomirror\n')
+				proc.stdin.write('set xtics 86400\n')
+				proc.stdin.write('set autoscale\n')
+				proc.stdin.write('set datafile separator ","\n')
+				proc.stdin.write('cd "profiles"\n')
+				proc.stdin.write('plot ' + prof_name + ' using 1:2 axis x1y1 title "Weight (lbs)" with linespoints,' + prof_name + ' using 1:3 axis x1y2 title "BMI" with linespoints\n')
+				proc.stdin.write('reset\n')
+				proc.stdin.write('set term x11 1\n')
+				proc.stdin.write('set xdata time\n')
+				proc.stdin.write('set timefmt "%Y-%m-%d %H:%M"\n')
+				proc.stdin.write('set title "Your Test Results"\n')
+				proc.stdin.write('set xlabel "Date"\n')
+				proc.stdin.write('set ylabel "Points"\n')
+				proc.stdin.write('set xtics 86400\n')
+				proc.stdin.write('set autoscale\n')
+				proc.stdin.write('set datafile separator ","\n')
+				proc.stdin.write('plot ' + prof_name + ' using 1:4 title "Center of Balance" with linespoints,' \
+				                         + prof_name + ' using 1:5 title "Single Leg Balance" with linespoints,'\
+				                         + prof_name + ' using 1:6 title "Dynamic Balance" with linespoints,'\
+				                         + prof_name + ' using 1:7 title "Stop and Go" with linespoints,'\
+				                         + prof_name + ' using 1:8 title "Maze" with linespoints\n')
+				proc.stdin.write('pause -1\n')
+				state=MAIN
+			else:
+				#Otherwise, exit the program. If a user profile has been loaded, then write current results
+				if (user_profile):
+					if (not results_logged):
+						now = datetime.datetime.now()
+						user_profile.write(now.strftime("%Y-%m-%d %H:%M")+','
+						+ str(meas_results[0])+',' 
+						+ str(meas_results[1])+','
+						+ str(meas_results[2])+',' 
+						+ str(meas_results[3])+','
+						+ str(meas_results[4])+',' 
+						+ str(meas_results[5])+','   
+						+ str(meas_results[6])+'\n')
+						user_profile.close()
 				pygame.quit()
 				sys.exit()
 
@@ -301,7 +354,7 @@ def main():
 			sys.exit()
 		if e.type == pygame.KEYDOWN:
 			if e.key == pygame.K_ESCAPE:
-				if (user_profile):
+				if (user_profile): 
 					now = datetime.datetime.now()
 					user_profile.write(now.strftime("%Y-%m-%d %H:%M")+','
 					+ str(meas_results[0])+',' 
