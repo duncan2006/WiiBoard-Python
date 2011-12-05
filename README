@@ -1,3 +1,4 @@
+===== GIT INSTRUCTIONS =====
 To begin, grab the newest version and merge it to your repository
 $ git fetch upstream
 $ git merge upstream/master
@@ -10,3 +11,8 @@ $ git commit -m "Comments for commit"
 
 Finally, push the updates to the server
 $ git push origin master
+
+===== RUNNING INSTRUCTIONS =====
+Open a command prompt and navigate to the game directory
+Type ./wiimenu.py
+to run the program 

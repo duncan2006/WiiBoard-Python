@@ -301,7 +301,8 @@ def main():
 				proc.stdin.write('set autoscale\n')
 				proc.stdin.write('set datafile separator ","\n')
 				proc.stdin.write('cd "profiles"\n')
-				proc.stdin.write('plot ' + prof_name + ' using 1:2 axis x1y1 title "Weight (lbs)" with linespoints,' + prof_name + ' using 1:3 axis x1y2 title "BMI" with linespoints\n')
+				proc.stdin.write('plot ' + prof_name + ' using 1:2 axis x1y1 title "Weight (lbs)" with linespoints,' \
+				                         + prof_name + ' using 1:3 axis x1y2 title "BMI" with linespoints\n')
 				proc.stdin.write('reset\n')
 				proc.stdin.write('set term x11 1\n')
 				proc.stdin.write('set xdata time\n')
